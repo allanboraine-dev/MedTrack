@@ -91,6 +91,18 @@ import React, { useState, useEffect, useReducer, useMemo, useRef } from 'react';
       return Math.ceil(diffTime / (1000 * 60 * 60 * 24));
     }
 
+    function getDispensableBatches(item) {
+      return (item?.batches || [])
+        .filter(batch =>
+          batch.quantity > 0 &&
+          !batch.quarantined &&
+          !batch.discrepancyLocked &&
+          batch.status !== 'DISCREPANCY_LOCKED' &&
+          getDaysUntil(batch.expiryDate) >= 0
+        )
+        .sort((a, b) => new Date(a.expiryDate) - new Date(b.expiryDate));
+    }
+
     // --- REALISTIC SOUTH AFRICAN CORRECTIONAL DATASET ---
     const INITIAL_FACILITIES = [
       { id: 'STA', name: 'St. Albans Correctional Centre', province: 'Eastern Cape (Gqeberha)', inmatesCount: 2418, security: 'Maximum & Medium', depot: 'Port Elizabeth Regional Depot' },
@@ -455,15 +467,35 @@ import React, { useState, useEffect, useReducer, useMemo, useRef } from 'react';
         prevHash: '0000000000000000000000000000000000000000000000000000000000000000',
         hash: 'a1b7e42d90f84511892cfa7b321098de76c5b432a10f9e8d7c6b5a43210fe987',
         type: 'RECEIPT',
+        drugId: 'MED-005',
         drugName: 'Morphine Sulphate 10mg/ml Ampoules (1ml)',
         emlCode: 'EML-CNS-006',
         schedule: 'S6',
         batchNumber: 'BATCH-MOR-S6-77',
+        binLocation: 'VAULT-S6-SAF-01',
         inmateId: 'DEPO-RECEIPT-GCS',
         recipientName: 'Provincial Depot Delivery GRV #4419',
         prescribingDoctor: 'N/A (Provincial Depot)',
         quantity: 34,
         balance: 46,
+        expectedBatchCount: 46,
+        blindPhysicalCount: 46,
+        physicalCountStatus: 'COUNT_VERIFIED',
+        exceptionTags: ['DEPOT_RECEIPT', 'DUAL_CUSTODY_VERIFIED'],
+        initiator: {
+          id: 'STF-001',
+          name: 'Pharm. Liezel Venter',
+          roleLabel: 'Responsible Pharmacist',
+          council: 'SAPC',
+          regNumber: '48912'
+        },
+        witness: {
+          id: 'STF-005',
+          name: 'Sr. P. Dlamini, RN',
+          roleLabel: 'Registered Nurse',
+          council: 'SANC',
+          regNumber: '10948'
+        },
         pharmacistName: 'Pharm. L. Venter (SAPC #48912)',
         witnessName: 'Sr. P. Dlamini, RN (SANC #10948)',
         notes: 'Cold-chain security seals inspected and verified intact upon delivery from PE Depot.'
@@ -474,15 +506,35 @@ import React, { useState, useEffect, useReducer, useMemo, useRef } from 'react';
         prevHash: 'a1b7e42d90f84511892cfa7b321098de76c5b432a10f9e8d7c6b5a43210fe987',
         hash: 'b2c8f53e01a95622903dfb8c432109ef87d6c543b210af9e8d7c6b543210fa98',
         type: 'DISPENSE',
+        drugId: 'MED-006',
         drugName: 'Diazepam 5mg Tablets',
         emlCode: 'EML-CNS-001',
         schedule: 'S5',
         batchNumber: 'BATCH-DZP-54K',
+        binLocation: 'SEC-CAB-S5-02',
         inmateId: 'STA-2022-44109',
         recipientName: 'Johan Van der Merwe (Block B-1)',
         prescribingDoctor: 'Dr. K. Govender (MP 0612984)',
         quantity: -15,
         balance: 125,
+        expectedBatchCount: 40,
+        blindPhysicalCount: 40,
+        physicalCountStatus: 'COUNT_VERIFIED',
+        exceptionTags: ['ROUTINE_ISSUE', 'DUAL_CUSTODY_VERIFIED'],
+        initiator: {
+          id: 'STF-001',
+          name: 'Pharm. Liezel Venter',
+          roleLabel: 'Responsible Pharmacist',
+          council: 'SAPC',
+          regNumber: '48912'
+        },
+        witness: {
+          id: 'STF-006',
+          name: 'Sr. M. Tshabalala, RN',
+          roleLabel: 'Clinical Ward Sister',
+          council: 'SANC',
+          regNumber: '22091'
+        },
         pharmacistName: 'Pharm. L. Venter (SAPC #48912)',
         witnessName: 'Sr. M. Tshabalala (SANC #22091)',
         notes: 'Severe muscle spasm & neuropathic pain protocol. Verified against psychiatric authority.'
@@ -493,18 +545,116 @@ import React, { useState, useEffect, useReducer, useMemo, useRef } from 'react';
         prevHash: 'b2c8f53e01a95622903dfb8c432109ef87d6c543b210af9e8d7c6b543210fa98',
         hash: 'c3d9a64f12ba6733014eac9d543210fa98e7d654c321ba0f9e8d7c6543210fb0',
         type: 'DISPENSE',
+        drugId: 'MED-005',
         drugName: 'Morphine Sulphate 10mg/ml Ampoules (1ml)',
         emlCode: 'EML-CNS-006',
         schedule: 'S6',
         batchNumber: 'BATCH-MOR-S6-69',
+        binLocation: 'VAULT-S6-SAF-01',
         inmateId: 'STA-2024-11045',
         recipientName: 'Themba Ndlovu (Isolation Bed 03)',
         prescribingDoctor: 'Dr. R. Naidoo (MP 0554210)',
         quantity: -1,
         balance: 45,
+        expectedBatchCount: 12,
+        blindPhysicalCount: 12,
+        physicalCountStatus: 'COUNT_VERIFIED',
+        exceptionTags: ['DIRECT_OBSERVED_INJECTION', 'DUAL_CUSTODY_VERIFIED'],
+        initiator: {
+          id: 'STF-001',
+          name: 'Pharm. Liezel Venter',
+          roleLabel: 'Responsible Pharmacist',
+          council: 'SAPC',
+          regNumber: '48912'
+        },
+        witness: {
+          id: 'STF-005',
+          name: 'Sr. P. Dlamini, RN',
+          roleLabel: 'Registered Nurse',
+          council: 'SANC',
+          regNumber: '10948'
+        },
         pharmacistName: 'Pharm. L. Venter (SAPC #48912)',
         witnessName: 'Sr. P. Dlamini, RN (SANC #10948)',
         notes: 'Direct observed injection for severe surgical abdominal trauma. Remainder ampoule accounted for.'
+      },
+      {
+        id: 'SAPC-REG-2026-00419',
+        timestamp: '2026-11-18T10:15:00',
+        prevHash: 'c3d9a64f12ba6733014eac9d543210fa98e7d654c321ba0f9e8d7c6543210fb0',
+        hash: 'd4e0b75023cb7844125fbd0e6543210fb09f8e765d432cb10f0e8d76543210fc',
+        type: 'INMATE_RETURN',
+        drugId: 'MED-006',
+        drugName: 'Diazepam 5mg Tablets',
+        emlCode: 'EML-CNS-001',
+        schedule: 'S5',
+        batchNumber: 'BATCH-DZP-54K',
+        binLocation: 'SEC-CAB-S5-02',
+        inmateId: 'STA-2023-88912',
+        recipientName: 'Sipho Khumalo (Block C-3)',
+        prescribingDoctor: 'Dr. N. Mbatha (MP 0498112)',
+        quantity: 1,
+        balance: 125,
+        expectedBatchCount: 40,
+        blindPhysicalCount: 40,
+        physicalCountStatus: 'RETURN_INSPECTED',
+        exceptionTags: ['INMATE_REFUSAL', 'INMATE_VERBAL_REFUSAL', 'RETURN_TO_SAFE_INVENTORY', 'DUAL_CUSTODY_VERIFIED'],
+        initiator: {
+          id: 'STF-001',
+          name: 'Pharm. Liezel Venter',
+          roleLabel: 'Responsible Pharmacist',
+          council: 'SAPC',
+          regNumber: '48912'
+        },
+        witness: {
+          id: 'STF-005',
+          name: 'Sr. P. Dlamini, RN',
+          roleLabel: 'Registered Nurse',
+          council: 'SANC',
+          regNumber: '10948'
+        },
+        pharmacistName: 'Pharm. L. Venter (SAPC #48912)',
+        witnessName: 'Sr. P. Dlamini, RN (SANC #10948)',
+        notes: 'Cell-block return: Inmate refused bedtime dose at cell hatch. Sealed blister intact; inspected and restored to vault safe.'
+      },
+      {
+        id: 'SAPC-REG-2026-00420',
+        timestamp: '2026-11-18T11:40:00',
+        prevHash: 'd4e0b75023cb7844125fbd0e6543210fb09f8e765d432cb10f0e8d76543210fc',
+        hash: 'e5f1c86134dc89552360ce1f76543210ac10a9876e543dc2101f9e876543210f',
+        type: 'FEFO_SPLIT',
+        drugId: 'MED-005',
+        drugName: 'Morphine Sulphate 10mg/ml Ampoules (1ml)',
+        emlCode: 'EML-CNS-006',
+        schedule: 'S6',
+        batchNumber: 'BATCH-MOR-S6-69 (12 un) + BATCH-MOR-S6-77 (3 un)',
+        binLocation: 'VAULT-S6-SAF-01',
+        inmateId: 'STA-2024-11045',
+        recipientName: 'Themba Ndlovu (Isolation Bed 03)',
+        prescribingDoctor: 'Dr. R. Naidoo (MP 0554210)',
+        quantity: -15,
+        balance: 31,
+        expectedBatchCount: 46,
+        blindPhysicalCount: 12,
+        physicalCountStatus: 'SPLIT_VERIFIED',
+        exceptionTags: ['FEFO_SPLIT_BATCH', 'DUAL_CUSTODY_VERIFIED'],
+        initiator: {
+          id: 'STF-001',
+          name: 'Pharm. Liezel Venter',
+          roleLabel: 'Responsible Pharmacist',
+          council: 'SAPC',
+          regNumber: '48912'
+        },
+        witness: {
+          id: 'STF-002',
+          name: 'Pharm. Kabelo Sithole',
+          roleLabel: 'Clinical Dispensary Pharmacist',
+          council: 'SAPC',
+          regNumber: '52190'
+        },
+        pharmacistName: 'Pharm. L. Venter (SAPC #48912)',
+        witnessName: 'Pharm. K. Sithole (SAPC #52190)',
+        notes: 'Split-Batch FEFO Allocation: Exhausted primary batch BATCH-MOR-S6-69 (12 un) and drew remainder 3 un from secondary batch BATCH-MOR-S6-77.'
       }
     ];
 
@@ -689,6 +839,21 @@ import React, { useState, useEffect, useReducer, useMemo, useRef } from 'react';
         pin: '5566',
         shift: 'Ward Rounds (07:00 - 19:00)',
         witnessOnDuty: 'Sr. M. Tshabalala (SANC #22091)'
+      },
+      {
+        id: 'STF-006',
+        name: 'Sr. M. Tshabalala, RN',
+        council: 'SANC',
+        regNumber: '22091',
+        role: 'REGISTERED_NURSE',
+        roleLabel: 'Clinical Ward Sister (SANC)',
+        clearanceLevel: 2,
+        canAccessS5S6: false,
+        canOverrideFefo: false,
+        canRequisitionDepot: false,
+        pin: '8899',
+        shift: 'Night Duty (19:00 - 07:00)',
+        witnessOnDuty: 'Pharm. L. Venter (SAPC #48912)'
       }
     ];
 
@@ -752,6 +917,18 @@ import React, { useState, useEffect, useReducer, useMemo, useRef } from 'react';
       const [controlledRegister, setControlledRegister] = useState(() => {
         const saved = localStorage.getItem('boraine_s5s6_register');
         return saved ? JSON.parse(saved) : INITIAL_CONTROLLED_REGISTER;
+      });
+
+      const [dispenseRecords, setDispenseRecords] = useState(() => {
+        const saved = localStorage.getItem('boraine_inmate_dispenses');
+        if (!saved) return [];
+        try {
+          const records = JSON.parse(saved);
+          return Array.isArray(records) ? records : [];
+        } catch (error) {
+          console.warn('Unable to load inmate dispensing history:', error);
+          return [];
+        }
       });
 
       const [inmates, setInmates] = useState(() => {
@@ -924,6 +1101,11 @@ import React, { useState, useEffect, useReducer, useMemo, useRef } from 'react';
       const [modalState, setModalState] = useState({
         grvOpen: false,
         s5s6Open: false,
+        s5s6SplitBatchOpen: false,
+        s5s6WastageOpen: false,
+        s5s6ReturnOpen: false,
+        s5s6AuditOpen: false,
+        s5s6VarianceReportOpen: false,
         fefoPickOpen: false,
         fefoItem: null,
         transferModalOpen: false,
@@ -938,11 +1120,16 @@ import React, { useState, useEffect, useReducer, useMemo, useRef } from 'react';
         inmateDispenseOpen: false,
         dispensingInmate: null,
         dispensingSelectedDrugId: '',
+        dispensingBatchNumber: '',
         dispensingQty: 1,
         supplierModalOpen: false,
         supplierModalTab: 'list',
         mobileMenuOpen: false
       });
+
+      const [activeVarianceIncident, setActiveVarianceIncident] = useState(null);
+      const [registerFilter, setRegisterFilter] = useState('ALL');
+      const [registerSearch, setRegisterSearch] = useState('');
 
       // Search & Filter State
       const [searchQuery, setSearchQuery] = useState('');
@@ -964,6 +1151,10 @@ import React, { useState, useEffect, useReducer, useMemo, useRef } from 'react';
       useEffect(() => {
         localStorage.setItem('boraine_s5s6_register', JSON.stringify(controlledRegister));
       }, [controlledRegister]);
+
+      useEffect(() => {
+        localStorage.setItem('boraine_inmate_dispenses', JSON.stringify(dispenseRecords));
+      }, [dispenseRecords]);
 
       useEffect(() => {
         localStorage.setItem('boraine_inmates', JSON.stringify(inmates));
@@ -1012,6 +1203,7 @@ import React, { useState, useEffect, useReducer, useMemo, useRef } from 'react';
         if (confirm("Reset all local air-gapped data to pristine SAPC baseline mock records?")) {
           setInventory(INITIAL_INVENTORY);
           setControlledRegister(INITIAL_CONTROLLED_REGISTER);
+          setDispenseRecords([]);
           setInmates(INITIAL_INMATES);
           setFacility(INITIAL_FACILITIES[0]);
           localStorage.clear();
@@ -1092,11 +1284,26 @@ import React, { useState, useEffect, useReducer, useMemo, useRef } from 'react';
         setModalState(prev => ({ ...prev, grvOpen: false }));
       };
 
-      // --- S5/S6 CONTROLLED DISPENSING HANDLER ---
+      // --- S5/S6 CONTROLLED DISPENSING HANDLER WITH BLIND SAFE COUNT & DUAL CONTROL ---
       const handleS5S6Submit = (payload) => {
-        // Validation check for PIN
-        if (payload.pin !== PHARMACIST_CREDENTIALS.authorizedPin) {
-          addToast('error', 'Authentication Failed', 'Invalid Pharmacist 2FA PIN. GPP Section 8.4 prohibits unauthorized access.');
+        const initiator = payload.initiator || session.currentUser;
+        const witness = staffList.find(s => s.id === payload.witnessId);
+
+        // 1. Dual Control Check: Block Self-Verification
+        if (!witness || initiator.id === witness.id) {
+          addToast('error', 'Dual-Custody Violation', 'Initiator and Witness cannot be the same staff member. Self-verification is strictly prohibited under SAPC GPP Rule 8.4.');
+          return false;
+        }
+
+        // 2. Dual Control Check: Initiator PIN
+        if (payload.initiatorPin !== initiator.pin) {
+          addToast('error', 'Initiator Authentication Failed', `Invalid Security PIN for ${initiator.name}. Authorized demo PIN is: ${initiator.pin}`);
+          return false;
+        }
+
+        // 3. Dual Control Check: Witness PIN
+        if (payload.witnessPin !== witness.pin) {
+          addToast('error', 'Witness Authentication Failed', `Invalid Witness PIN for ${witness.name}. Authorized demo PIN is: ${witness.pin}`);
           return false;
         }
 
@@ -1104,19 +1311,128 @@ import React, { useState, useEffect, useReducer, useMemo, useRef } from 'react';
         if (!targetMed) return false;
 
         const targetBatch = targetMed.batches.find(b => b.batchNumber === payload.batchNumber);
-        if (!targetBatch || targetBatch.quantity < payload.quantity) {
-          addToast('error', 'Insufficient Stock', 'Selected batch does not have sufficient physical units on hand.');
+        if (!targetBatch) {
+          addToast('error', 'Batch Not Found', 'Selected batch does not exist.');
           return false;
         }
 
-        // Deduct from Inventory
+        if (targetBatch.discrepancyLocked) {
+          addToast('error', 'Batch Locked', `Batch ${targetBatch.batchNumber} is currently under DISCREPANCY_LOCKED status. Dispensing is frozen.`);
+          return false;
+        }
+
+        const enteredCount = parseInt(payload.blindPhysicalCount, 10);
+        const qtyToDispense = parseInt(payload.quantity, 10);
+
+        // 4. BLIND SAFE COUNT COMPARISON STEP
+        if (isNaN(enteredCount) || enteredCount !== targetBatch.quantity) {
+          // VARIANCE DETECTED -> TRIGGER DISCREPANCY LOCKDOWN
+          const varianceDelta = (isNaN(enteredCount) ? 0 : enteredCount) - targetBatch.quantity;
+          const incidentRef = `VAR-SAPC-${new Date().getFullYear()}-${Math.floor(1000 + Math.random() * 9000)}`;
+          const incidentTimestamp = new Date().toISOString();
+
+          // Flag batch DISCREPANCY_LOCKED in inventory
+          setInventory(prev => prev.map(item => {
+            if (item.id === payload.drugId) {
+              return {
+                ...item,
+                batches: item.batches.map(b => {
+                  if (b.batchNumber === payload.batchNumber) {
+                    return {
+                      ...b,
+                      quarantined: true,
+                      discrepancyLocked: true,
+                      status: 'DISCREPANCY_LOCKED',
+                      lockReason: `Blind physical count variance: entered ${enteredCount} un vs expected ledger balance ${b.quantity} un (Delta: ${varianceDelta > 0 ? '+' : ''}${varianceDelta} un)`
+                    };
+                  }
+                  return b;
+                })
+              };
+            }
+            return item;
+          }));
+
+          // Append DISCREPANCY_LOCK to cryptographic register
+          const prevEntry = controlledRegister[controlledRegister.length - 1];
+          const prevHash = prevEntry ? prevEntry.hash : '0000000000000000000000000000000000000000000000000000000000000000';
+          const newEntryId = `SAPC-REG-${new Date().getFullYear()}-${Math.floor(1000 + Math.random() * 9000)}`;
+          const rawHashData = `${prevHash}|${incidentTimestamp}|${targetMed.id}|${payload.batchNumber}|DISCREPANCY_LOCK|0|${targetBatch.quantity}|${varianceDelta}`;
+          const blockHash = simpleHash(rawHashData);
+
+          const incidentData = {
+            id: newEntryId,
+            incidentId: incidentRef,
+            timestamp: incidentTimestamp,
+            prevHash: prevHash,
+            hash: blockHash,
+            type: 'DISCREPANCY_LOCK',
+            drugId: targetMed.id,
+            drugName: targetMed.name,
+            emlCode: targetMed.emlCode,
+            schedule: targetMed.schedule,
+            batchNumber: payload.batchNumber,
+            binLocation: targetBatch.binLocation,
+            expiryDate: targetBatch.expiryDate,
+            inmateId: payload.inmateId || 'DISPENSARY-AUDIT',
+            recipientName: 'VAULT AUDIT QUARANTINE',
+            prescribingDoctor: payload.doctor || 'N/A (SAPC Statutory Lock)',
+            quantity: 0,
+            balance: targetBatch.quantity,
+            expectedBatchCount: targetBatch.quantity,
+            blindPhysicalCount: isNaN(enteredCount) ? 'NONE' : enteredCount,
+            varianceDelta: varianceDelta,
+            physicalCountStatus: 'VARIANCE_FLAGGED',
+            exceptionTags: ['DISCREPANCY_LOCKED', 'SAPC_SEC22A_VARIANCE'],
+            initiator: {
+              id: initiator.id,
+              name: initiator.name,
+              roleLabel: initiator.roleLabel,
+              council: initiator.council,
+              regNumber: initiator.regNumber
+            },
+            witness: {
+              id: witness.id,
+              name: witness.name,
+              roleLabel: witness.roleLabel,
+              council: witness.council,
+              regNumber: witness.regNumber
+            },
+            pharmacistName: `${initiator.name} (${initiator.council} #${initiator.regNumber})`,
+            witnessName: `${witness.name} (${witness.council} #${witness.regNumber})`,
+            notes: `SAPC Act 101 §22A MANDATORY LOCK: Blind physical safe count (${enteredCount} un) did not match system balance (${targetBatch.quantity} un). Variance Delta: ${varianceDelta > 0 ? '+' : ''}${varianceDelta} un. Batch quarantined pending council audit.`,
+            regulatoryCitation: 'South African Pharmacy Council (SAPC) GPP Section 8.4 & Medicines and Related Substances Act 101 of 1965 Section 22A'
+          };
+
+          setControlledRegister(prev => [...prev, incidentData]);
+          setActiveVarianceIncident(incidentData);
+
+          addToast('error', 'S5/S6 VARIANCE INCIDENT LOCK', `Discrepancy detected on batch ${payload.batchNumber} (Expected ${targetBatch.quantity}, Counted ${enteredCount}). Batch is now DISCREPANCY_LOCKED.`);
+          setModalState(prev => ({
+            ...prev,
+            s5s6Open: false,
+            s5s6VarianceReportOpen: true,
+            s5s6InmateId: '',
+            s5s6BatchNumber: '',
+            s5s6Quantity: 1
+          }));
+          return false;
+        }
+
+        // 5. If Blind Count Matches: Check Sufficient Physical Stock to Dispense
+        if (targetBatch.quantity < qtyToDispense) {
+          addToast('error', 'Insufficient Stock', `Selected batch has ${targetBatch.quantity} un, but ${qtyToDispense} un requested. Use Split-Batch FEFO Issue to draw across batches.`);
+          return false;
+        }
+
+        // 6. Deduct from Inventory
         setInventory(prev => prev.map(item => {
           if (item.id === payload.drugId) {
             return {
               ...item,
               batches: item.batches.map(b => {
                 if (b.batchNumber === payload.batchNumber) {
-                  return { ...b, quantity: b.quantity - payload.quantity };
+                  return { ...b, quantity: b.quantity - qtyToDispense };
                 }
                 return b;
               })
@@ -1125,16 +1441,272 @@ import React, { useState, useEffect, useReducer, useMemo, useRef } from 'react';
           return item;
         }));
 
-        // Calculate new balance
         const allCurrentBatchesSum = targetMed.batches.reduce((sum, b) => sum + b.quantity, 0);
-        const newBalance = allCurrentBatchesSum - payload.quantity;
+        const newBalance = allCurrentBatchesSum - qtyToDispense;
 
-        // Create Cryptographic Register Block
         const prevEntry = controlledRegister[controlledRegister.length - 1];
         const prevHash = prevEntry ? prevEntry.hash : '0000000000000000000000000000000000000000000000000000000000000000';
         const newEntryId = `SAPC-REG-${new Date().getFullYear()}-${Math.floor(1000 + Math.random() * 9000)}`;
-        
-        const rawHashData = `${prevHash}|${new Date().toISOString()}|${targetMed.id}|${payload.batchNumber}|${payload.txType}|-${payload.quantity}|${newBalance}`;
+
+        const rawHashData = `${prevHash}|${new Date().toISOString()}|${targetMed.id}|${payload.batchNumber}|${payload.txType || 'DISPENSE'}|-${qtyToDispense}|${newBalance}`;
+        const blockHash = simpleHash(rawHashData);
+
+        const selInmate = inmates.find(i => i.id === payload.inmateId);
+
+        const newLedgerEntry = {
+          id: newEntryId,
+          timestamp: new Date().toISOString(),
+          prevHash: prevHash,
+          hash: blockHash,
+          type: payload.txType || 'DISPENSE',
+          drugId: targetMed.id,
+          drugName: targetMed.name,
+          emlCode: targetMed.emlCode,
+          schedule: targetMed.schedule,
+          batchNumber: payload.batchNumber,
+          binLocation: targetBatch.binLocation,
+          inmateId: payload.inmateId,
+          recipientName: payload.recipientName || (selInmate ? `${selInmate.name} (${selInmate.cellBlock})` : 'Correctional Hospital Issue'),
+          prescribingDoctor: payload.doctor || 'Dr. R. Naidoo (MP 0554210)',
+          quantity: -qtyToDispense,
+          balance: newBalance,
+          expectedBatchCount: targetBatch.quantity,
+          blindPhysicalCount: enteredCount,
+          physicalCountStatus: 'COUNT_VERIFIED',
+          exceptionTags: ['ROUTINE_ISSUE', 'DUAL_CUSTODY_VERIFIED'],
+          initiator: {
+            id: initiator.id,
+            name: initiator.name,
+            roleLabel: initiator.roleLabel,
+            council: initiator.council,
+            regNumber: initiator.regNumber
+          },
+          witness: {
+            id: witness.id,
+            name: witness.name,
+            roleLabel: witness.roleLabel,
+            council: witness.council,
+            regNumber: witness.regNumber
+          },
+          pharmacistName: `${initiator.name} (${initiator.council} #${initiator.regNumber})`,
+          witnessName: `${witness.name} (${witness.council} #${witness.regNumber})`,
+          notes: payload.notes || 'Routine controlled issue under medical officer direction.'
+        };
+
+        setControlledRegister(prev => [...prev, newLedgerEntry]);
+        addToast('success', 'S5/S6 Vault Issue Sealed', `Count verified (${enteredCount} un). Chained to SAPC register. New vault balance: ${newBalance} units.`);
+        setModalState(prev => ({
+          ...prev,
+          s5s6Open: false,
+          s5s6InmateId: '',
+          s5s6BatchNumber: '',
+          s5s6Quantity: 1
+        }));
+        return true;
+      };
+
+      // --- SPLIT-BATCH FEFO ISSUE HANDLER ---
+      const handleSplitBatchFefoSubmit = (payload) => {
+        const initiator = payload.initiator || session.currentUser;
+        const witness = staffList.find(s => s.id === payload.witnessId);
+
+        if (!witness || initiator.id === witness.id) {
+          addToast('error', 'Dual-Custody Violation', 'Initiator and Witness cannot be the same staff member.');
+          return false;
+        }
+        if (payload.initiatorPin !== initiator.pin) {
+          addToast('error', 'Initiator Authentication Failed', `Invalid PIN for ${initiator.name}.`);
+          return false;
+        }
+        if (payload.witnessPin !== witness.pin) {
+          addToast('error', 'Witness Authentication Failed', `Invalid PIN for ${witness.name}.`);
+          return false;
+        }
+
+        const targetMed = inventory.find(m => m.id === payload.drugId);
+        if (!targetMed) return false;
+
+        const totalRequested = parseInt(payload.quantity, 10);
+        if (isNaN(totalRequested) || totalRequested <= 0) {
+          addToast('error', 'Invalid Quantity', 'Please enter a valid issue quantity.');
+          return false;
+        }
+
+        // Get available active batches sorted by FEFO (expiryDate ascending)
+        const availableBatches = targetMed.batches
+          .filter(b => !b.discrepancyLocked && !b.quarantined && b.quantity > 0)
+          .sort((a, b) => new Date(a.expiryDate) - new Date(b.expiryDate));
+
+        const totalAvailableStock = availableBatches.reduce((s, b) => s + b.quantity, 0);
+        if (totalAvailableStock < totalRequested) {
+          addToast('error', 'Insufficient Total Stock', `Total available active stock across all batches is ${totalAvailableStock} un. Cannot fulfill ${totalRequested} un.`);
+          return false;
+        }
+
+        let remainingNeeded = totalRequested;
+        const allocations = [];
+        for (const b of availableBatches) {
+          if (remainingNeeded <= 0) break;
+          const take = Math.min(b.quantity, remainingNeeded);
+          allocations.push({
+            batchNumber: b.batchNumber,
+            expiryDate: b.expiryDate,
+            binLocation: b.binLocation,
+            allocated: take,
+            previousQuantity: b.quantity,
+            newQuantity: b.quantity - take
+          });
+          remainingNeeded -= take;
+        }
+
+        // Blind safe count check on primary batch
+        const primaryBatch = availableBatches[0];
+        const primaryCount = parseInt(payload.blindPhysicalCount, 10);
+        if (!isNaN(primaryCount) && primaryCount !== primaryBatch.quantity) {
+          // Mismatch on primary batch -> trigger discrepancy lock
+          handleS5S6Submit({
+            ...payload,
+            batchNumber: primaryBatch.batchNumber,
+            quantity: allocations[0].allocated
+          });
+          return false;
+        }
+
+        // Deduct from inventory
+        setInventory(prev => prev.map(item => {
+          if (item.id === payload.drugId) {
+            return {
+              ...item,
+              batches: item.batches.map(b => {
+                const alloc = allocations.find(a => a.batchNumber === b.batchNumber);
+                if (alloc) {
+                  return { ...b, quantity: b.quantity - alloc.allocated };
+                }
+                return b;
+              })
+            };
+          }
+          return item;
+        }));
+
+        const allCurrentBatchesSum = targetMed.batches.reduce((sum, b) => sum + b.quantity, 0);
+        const newBalance = allCurrentBatchesSum - totalRequested;
+
+        const prevEntry = controlledRegister[controlledRegister.length - 1];
+        const prevHash = prevEntry ? prevEntry.hash : '0000000000000000000000000000000000000000000000000000000000000000';
+        const newEntryId = `SAPC-REG-${new Date().getFullYear()}-${Math.floor(1000 + Math.random() * 9000)}`;
+
+        const batchDesc = allocations.map(a => `${a.batchNumber} (${a.allocated} un)`).join(' + ');
+        const rawHashData = `${prevHash}|${new Date().toISOString()}|${targetMed.id}|${batchDesc}|FEFO_SPLIT|-${totalRequested}|${newBalance}`;
+        const blockHash = simpleHash(rawHashData);
+
+        const selInmate = inmates.find(i => i.id === payload.inmateId);
+
+        const newLedgerEntry = {
+          id: newEntryId,
+          timestamp: new Date().toISOString(),
+          prevHash: prevHash,
+          hash: blockHash,
+          type: 'FEFO_SPLIT',
+          drugId: targetMed.id,
+          drugName: targetMed.name,
+          emlCode: targetMed.emlCode,
+          schedule: targetMed.schedule,
+          batchNumber: batchDesc,
+          binLocation: allocations.map(a => a.binLocation).join(', '),
+          inmateId: payload.inmateId,
+          recipientName: payload.recipientName || (selInmate ? `${selInmate.name} (${selInmate.cellBlock})` : 'Correctional Hospital Issue'),
+          prescribingDoctor: payload.doctor || 'Dr. R. Naidoo (MP 0554210)',
+          quantity: -totalRequested,
+          balance: newBalance,
+          expectedBatchCount: totalAvailableStock,
+          blindPhysicalCount: primaryCount || primaryBatch.quantity,
+          physicalCountStatus: 'SPLIT_VERIFIED',
+          exceptionTags: ['FEFO_SPLIT_BATCH', 'DUAL_CUSTODY_VERIFIED'],
+          initiator: {
+            id: initiator.id,
+            name: initiator.name,
+            roleLabel: initiator.roleLabel,
+            council: initiator.council,
+            regNumber: initiator.regNumber
+          },
+          witness: {
+            id: witness.id,
+            name: witness.name,
+            roleLabel: witness.roleLabel,
+            council: witness.council,
+            regNumber: witness.regNumber
+          },
+          pharmacistName: `${initiator.name} (${initiator.council} #${initiator.regNumber})`,
+          witnessName: `${witness.name} (${witness.council} #${witness.regNumber})`,
+          notes: `Split-Batch FEFO Spanned: ${allocations.map(a => `${a.allocated} un from ${a.batchNumber} (Exp ${a.expiryDate})`).join('; ')}. ${payload.notes || ''}`
+        };
+
+        setControlledRegister(prev => [...prev, newLedgerEntry]);
+        addToast('success', 'Split-Batch FEFO Issue Sealed', `Dispensed ${totalRequested} units across ${allocations.length} batches. New safe balance: ${newBalance} units.`);
+        setModalState(prev => ({ ...prev, s5s6SplitBatchOpen: false }));
+        return true;
+      };
+
+      // --- LOG WASTAGE / BREAKAGE HANDLER ---
+      const handleWastageSubmit = (payload) => {
+        const initiator = payload.initiator || session.currentUser;
+        const witness = staffList.find(s => s.id === payload.witnessId);
+
+        if (!witness || initiator.id === witness.id) {
+          addToast('error', 'Dual-Custody Violation', 'Initiator and Witness cannot be the same staff member.');
+          return false;
+        }
+        if (payload.initiatorPin !== initiator.pin) {
+          addToast('error', 'Initiator Authentication Failed', `Invalid PIN for ${initiator.name}.`);
+          return false;
+        }
+        if (payload.witnessPin !== witness.pin) {
+          addToast('error', 'Witness Authentication Failed', `Invalid PIN for ${witness.name}.`);
+          return false;
+        }
+
+        const targetMed = inventory.find(m => m.id === payload.drugId);
+        if (!targetMed) return false;
+
+        const targetBatch = targetMed.batches.find(b => b.batchNumber === payload.batchNumber);
+        if (!targetBatch) return false;
+
+        const wasteQty = parseInt(payload.quantity, 10);
+        if (isNaN(wasteQty) || wasteQty <= 0) {
+          addToast('error', 'Invalid Quantity', 'Please enter a valid wastage quantity.');
+          return false;
+        }
+
+        if (targetBatch.quantity < wasteQty) {
+          addToast('error', 'Insufficient Batch Units', `Cannot waste ${wasteQty} units; batch only holds ${targetBatch.quantity} units.`);
+          return false;
+        }
+
+        // Deduct from inventory
+        setInventory(prev => prev.map(item => {
+          if (item.id === payload.drugId) {
+            return {
+              ...item,
+              batches: item.batches.map(b => {
+                if (b.batchNumber === payload.batchNumber) {
+                  return { ...b, quantity: b.quantity - wasteQty };
+                }
+                return b;
+              })
+            };
+          }
+          return item;
+        }));
+
+        const allCurrentBatchesSum = targetMed.batches.reduce((sum, b) => sum + b.quantity, 0);
+        const newBalance = allCurrentBatchesSum - wasteQty;
+
+        const prevEntry = controlledRegister[controlledRegister.length - 1];
+        const prevHash = prevEntry ? prevEntry.hash : '0000000000000000000000000000000000000000000000000000000000000000';
+        const newEntryId = `SAPC-REG-${new Date().getFullYear()}-${Math.floor(1000 + Math.random() * 9000)}`;
+
+        const rawHashData = `${prevHash}|${new Date().toISOString()}|${targetMed.id}|${payload.batchNumber}|WASTAGE|-${wasteQty}|${newBalance}|${payload.reasonCode}`;
         const blockHash = simpleHash(rawHashData);
 
         const newLedgerEntry = {
@@ -1142,25 +1714,434 @@ import React, { useState, useEffect, useReducer, useMemo, useRef } from 'react';
           timestamp: new Date().toISOString(),
           prevHash: prevHash,
           hash: blockHash,
-          type: payload.txType,
+          type: 'WASTAGE',
+          drugId: targetMed.id,
           drugName: targetMed.name,
           emlCode: targetMed.emlCode,
           schedule: targetMed.schedule,
           batchNumber: payload.batchNumber,
-          inmateId: payload.inmateId,
-          recipientName: payload.recipientName,
-          prescribingDoctor: payload.doctor,
-          quantity: -payload.quantity,
+          binLocation: targetBatch.binLocation,
+          inmateId: 'CLINICAL-WASTE',
+          recipientName: 'Dispensary Destruction Container',
+          prescribingDoctor: 'N/A (SAPC Destruction Protocol 8.4)',
+          quantity: -wasteQty,
           balance: newBalance,
-          pharmacistName: `${PHARMACIST_CREDENTIALS.name} (SAPC #${PHARMACIST_CREDENTIALS.sapcNumber})`,
-          witnessName: payload.witnessName || PHARMACIST_CREDENTIALS.witnessOnDuty,
-          notes: payload.notes || 'Routine controlled issue under medical officer direction.'
+          expectedBatchCount: targetBatch.quantity,
+          blindPhysicalCount: targetBatch.quantity,
+          physicalCountStatus: 'WASTE_VERIFIED',
+          exceptionTags: ['WASTAGE_BREAKAGE', payload.reasonCode || 'BREAKAGE', 'DUAL_CUSTODY_VERIFIED'],
+          initiator: {
+            id: initiator.id,
+            name: initiator.name,
+            roleLabel: initiator.roleLabel,
+            council: initiator.council,
+            regNumber: initiator.regNumber
+          },
+          witness: {
+            id: witness.id,
+            name: witness.name,
+            roleLabel: witness.roleLabel,
+            council: witness.council,
+            regNumber: witness.regNumber
+          },
+          pharmacistName: `${initiator.name} (${initiator.council} #${initiator.regNumber})`,
+          witnessName: `${witness.name} (${witness.council} #${witness.regNumber})`,
+          notes: `Wastage logged: [${payload.reasonLabel || payload.reasonCode}] ${payload.notes || 'Disposed according to SAPC hazardous clinical pharmaceutical waste regulations.'}`
         };
 
         setControlledRegister(prev => [...prev, newLedgerEntry]);
-        addToast('success', 'Schedule 5/6 Ledger Sealed', `Transaction cryptographically chained. New physical balance: ${newBalance} units.`);
-        setModalState(prev => ({ ...prev, s5s6Open: false }));
+        addToast('success', 'Wastage & Breakage Sealed', `Deducted ${wasteQty} units for disposal. Chained to cryptographic register.`);
+        setModalState(prev => ({ ...prev, s5s6WastageOpen: false }));
         return true;
+      };
+
+      // --- INMATE REFUSAL / RETURN HANDLER ---
+      const handleInmateReturnSubmit = (payload) => {
+        const initiator = payload.initiator || session.currentUser;
+        const witness = staffList.find(s => s.id === payload.witnessId);
+
+        if (!witness || initiator.id === witness.id) {
+          addToast('error', 'Dual-Custody Violation', 'Initiator and Witness cannot be the same staff member.');
+          return false;
+        }
+        if (payload.initiatorPin !== initiator.pin) {
+          addToast('error', 'Initiator Authentication Failed', `Invalid PIN for ${initiator.name}.`);
+          return false;
+        }
+        if (payload.witnessPin !== witness.pin) {
+          addToast('error', 'Witness Authentication Failed', `Invalid PIN for ${witness.name}.`);
+          return false;
+        }
+
+        const targetMed = inventory.find(m => m.id === payload.drugId);
+        if (!targetMed) return false;
+
+        const targetBatch = targetMed.batches.find(b => b.batchNumber === payload.batchNumber);
+        if (!targetBatch) return false;
+
+        const returnQty = parseInt(payload.quantity, 10);
+        if (isNaN(returnQty) || returnQty <= 0) {
+          addToast('error', 'Invalid Quantity', 'Please enter a valid return quantity.');
+          return false;
+        }
+
+        const isRestoredToSafe = payload.disposition === 'RETURN_TO_SAFE_INVENTORY';
+
+        if (isRestoredToSafe) {
+          setInventory(prev => prev.map(item => {
+            if (item.id === payload.drugId) {
+              return {
+                ...item,
+                batches: item.batches.map(b => {
+                  if (b.batchNumber === payload.batchNumber) {
+                    return { ...b, quantity: b.quantity + returnQty };
+                  }
+                  return b;
+                })
+              };
+            }
+            return item;
+          }));
+        }
+
+        const allCurrentBatchesSum = targetMed.batches.reduce((sum, b) => sum + b.quantity, 0);
+        const newBalance = isRestoredToSafe ? allCurrentBatchesSum + returnQty : allCurrentBatchesSum;
+
+        const prevEntry = controlledRegister[controlledRegister.length - 1];
+        const prevHash = prevEntry ? prevEntry.hash : '0000000000000000000000000000000000000000000000000000000000000000';
+        const newEntryId = `SAPC-REG-${new Date().getFullYear()}-${Math.floor(1000 + Math.random() * 9000)}`;
+
+        const rawHashData = `${prevHash}|${new Date().toISOString()}|${targetMed.id}|${payload.batchNumber}|INMATE_RETURN|${isRestoredToSafe ? returnQty : 0}|${newBalance}|${payload.reasonCode}`;
+        const blockHash = simpleHash(rawHashData);
+
+        const selInmate = inmates.find(i => i.id === payload.inmateId);
+
+        const newLedgerEntry = {
+          id: newEntryId,
+          timestamp: new Date().toISOString(),
+          prevHash: prevHash,
+          hash: blockHash,
+          type: 'INMATE_RETURN',
+          drugId: targetMed.id,
+          drugName: targetMed.name,
+          emlCode: targetMed.emlCode,
+          schedule: targetMed.schedule,
+          batchNumber: payload.batchNumber,
+          binLocation: targetBatch.binLocation,
+          inmateId: payload.inmateId,
+          recipientName: selInmate ? `${selInmate.name} (${selInmate.cellBlock})` : 'Inmate Refusal Return',
+          prescribingDoctor: payload.doctor || (selInmate ? selInmate.doctor : 'Dr. R. Naidoo (MP 0554210)'),
+          quantity: isRestoredToSafe ? returnQty : 0,
+          balance: newBalance,
+          expectedBatchCount: targetBatch.quantity,
+          blindPhysicalCount: targetBatch.quantity,
+          physicalCountStatus: 'RETURN_INSPECTED',
+          exceptionTags: ['INMATE_REFUSAL', payload.reasonCode || 'REFUSAL', payload.disposition, 'DUAL_CUSTODY_VERIFIED'],
+          initiator: {
+            id: initiator.id,
+            name: initiator.name,
+            roleLabel: initiator.roleLabel,
+            council: initiator.council,
+            regNumber: initiator.regNumber
+          },
+          witness: {
+            id: witness.id,
+            name: witness.name,
+            roleLabel: witness.roleLabel,
+            council: witness.council,
+            regNumber: witness.regNumber
+          },
+          pharmacistName: `${initiator.name} (${initiator.council} #${initiator.regNumber})`,
+          witnessName: `${witness.name} (${witness.council} #${witness.regNumber})`,
+          notes: `Cell-block round return: Inmate refused dose (${payload.reasonLabel || payload.reasonCode}). Disposition: ${isRestoredToSafe ? 'Returned to active safe stock' : 'Quarantined for clinical destruction'}. Escort/Nurse: ${payload.escortOfficer || 'Ward Nurse'}. Notes: ${payload.notes || ''}`
+        };
+
+        setControlledRegister(prev => [...prev, newLedgerEntry]);
+        addToast('success', 'Inmate Refusal / Return Logged', `Logged return of ${returnQty} un. Disposition: ${isRestoredToSafe ? 'Restored to safe batch' : 'Placed in destruction quarantine'}.`);
+        setModalState(prev => ({ ...prev, s5s6ReturnOpen: false }));
+        return true;
+      };
+
+      // --- DEDICATED SAFE COUNT AUDIT / VARIANCE CHECK HANDLER ---
+      const handleSafeCountAuditSubmit = (payload) => {
+        const initiator = payload.initiator || session.currentUser;
+        const witness = staffList.find(s => s.id === payload.witnessId);
+
+        if (!witness || initiator.id === witness.id) {
+          addToast('error', 'Dual-Custody Violation', 'Initiator and Witness cannot be the same staff member.');
+          return false;
+        }
+        if (payload.initiatorPin !== initiator.pin) {
+          addToast('error', 'Initiator Authentication Failed', `Invalid PIN for ${initiator.name}.`);
+          return false;
+        }
+        if (payload.witnessPin !== witness.pin) {
+          addToast('error', 'Witness Authentication Failed', `Invalid PIN for ${witness.name}.`);
+          return false;
+        }
+
+        const targetMed = inventory.find(m => m.id === payload.drugId);
+        if (!targetMed) return false;
+
+        const targetBatch = targetMed.batches.find(b => b.batchNumber === payload.batchNumber);
+        if (!targetBatch) return false;
+
+        const enteredCount = parseInt(payload.blindPhysicalCount, 10);
+
+        // Check variance
+        if (isNaN(enteredCount) || enteredCount !== targetBatch.quantity) {
+          setModalState(prev => ({ ...prev, s5s6AuditOpen: false }));
+          handleS5S6Submit({
+            ...payload,
+            quantity: 0,
+            txType: 'DISCREPANCY_LOCK'
+          });
+          return false;
+        }
+
+        // Count Verified!
+        const prevEntry = controlledRegister[controlledRegister.length - 1];
+        const prevHash = prevEntry ? prevEntry.hash : '0000000000000000000000000000000000000000000000000000000000000000';
+        const newEntryId = `SAPC-REG-${new Date().getFullYear()}-${Math.floor(1000 + Math.random() * 9000)}`;
+
+        const allCurrentBatchesSum = targetMed.batches.reduce((sum, b) => sum + b.quantity, 0);
+        const rawHashData = `${prevHash}|${new Date().toISOString()}|${targetMed.id}|${payload.batchNumber}|AUDIT_CHECK|0|${allCurrentBatchesSum}`;
+        const blockHash = simpleHash(rawHashData);
+
+        const newLedgerEntry = {
+          id: newEntryId,
+          timestamp: new Date().toISOString(),
+          prevHash: prevHash,
+          hash: blockHash,
+          type: 'AUDIT_CHECK',
+          drugId: targetMed.id,
+          drugName: targetMed.name,
+          emlCode: targetMed.emlCode,
+          schedule: targetMed.schedule,
+          batchNumber: payload.batchNumber,
+          binLocation: targetBatch.binLocation,
+          inmateId: 'ROUTINE-AUDIT',
+          recipientName: 'Vault Safe Audit (Dual Custody)',
+          prescribingDoctor: 'N/A (SAPC GPP Rule 8.4 Audit)',
+          quantity: 0,
+          balance: allCurrentBatchesSum,
+          expectedBatchCount: targetBatch.quantity,
+          blindPhysicalCount: enteredCount,
+          physicalCountStatus: 'COUNT_VERIFIED',
+          exceptionTags: ['ROUTINE_AUDIT', 'DUAL_CUSTODY_VERIFIED'],
+          initiator: {
+            id: initiator.id,
+            name: initiator.name,
+            roleLabel: initiator.roleLabel,
+            council: initiator.council,
+            regNumber: initiator.regNumber
+          },
+          witness: {
+            id: witness.id,
+            name: witness.name,
+            roleLabel: witness.roleLabel,
+            council: witness.council,
+            regNumber: witness.regNumber
+          },
+          pharmacistName: `${initiator.name} (${initiator.council} #${initiator.regNumber})`,
+          witnessName: `${witness.name} (${witness.council} #${witness.regNumber})`,
+          notes: `Routine physical safe audit: Blind count of ${enteredCount} units matches system ledger perfectly. Verified by dual control.`
+        };
+
+        setControlledRegister(prev => [...prev, newLedgerEntry]);
+        addToast('success', 'Physical Safe Audit Sealed', `Batch ${payload.batchNumber} physical count (${enteredCount} un) verified and cryptographically recorded.`);
+        setModalState(prev => ({ ...prev, s5s6AuditOpen: false }));
+        return true;
+      };
+
+      // --- RESOLVE DISCREPANCY & RECOUNT HANDLER ---
+      const handleResolveDiscrepancy = (payload) => {
+        const initiator = payload.initiator || session.currentUser;
+        const witness = staffList.find(s => s.id === payload.witnessId);
+
+        if (!witness || initiator.id === witness.id) {
+          addToast('error', 'Dual-Custody Violation', 'Initiator and Witness cannot be the same staff member.');
+          return false;
+        }
+        if (payload.initiatorPin !== initiator.pin) {
+          addToast('error', 'Initiator Authentication Failed', `Invalid PIN for ${initiator.name}.`);
+          return false;
+        }
+        if (payload.witnessPin !== witness.pin) {
+          addToast('error', 'Witness Authentication Failed', `Invalid PIN for ${witness.name}.`);
+          return false;
+        }
+
+        const reconciledCount = parseInt(payload.reconciledPhysicalCount, 10);
+        if (isNaN(reconciledCount) || reconciledCount < 0) {
+          addToast('error', 'Invalid Count', 'Please enter a valid reconciled count.');
+          return false;
+        }
+
+        // Unlock batch in inventory and update to reconciled count
+        setInventory(prev => prev.map(item => {
+          if (item.id === payload.drugId) {
+            return {
+              ...item,
+              batches: item.batches.map(b => {
+                if (b.batchNumber === payload.batchNumber) {
+                  return {
+                    ...b,
+                    quarantined: false,
+                    discrepancyLocked: false,
+                    status: 'ACTIVE',
+                    quantity: reconciledCount,
+                    lockReason: null
+                  };
+                }
+                return b;
+              })
+            };
+          }
+          return item;
+        }));
+
+        const targetMed = inventory.find(m => m.id === payload.drugId);
+        const allCurrentBatchesSum = targetMed ? targetMed.batches.reduce((sum, b) => b.batchNumber === payload.batchNumber ? sum + reconciledCount : sum + b.quantity, 0) : reconciledCount;
+
+        const prevEntry = controlledRegister[controlledRegister.length - 1];
+        const prevHash = prevEntry ? prevEntry.hash : '0000000000000000000000000000000000000000000000000000000000000000';
+        const newEntryId = `SAPC-REG-${new Date().getFullYear()}-${Math.floor(1000 + Math.random() * 9000)}`;
+
+        const rawHashData = `${prevHash}|${new Date().toISOString()}|${payload.drugId}|${payload.batchNumber}|RECONCILIATION_UNLOCKED|0|${allCurrentBatchesSum}`;
+        const blockHash = simpleHash(rawHashData);
+
+        const newLedgerEntry = {
+          id: newEntryId,
+          timestamp: new Date().toISOString(),
+          prevHash: prevHash,
+          hash: blockHash,
+          type: 'RECONCILIATION_UNLOCKED',
+          drugId: payload.drugId,
+          drugName: payload.drugName || (targetMed ? targetMed.name : 'Controlled Substance'),
+          emlCode: payload.emlCode || (targetMed ? targetMed.emlCode : 'EML-S6'),
+          schedule: payload.schedule || (targetMed ? targetMed.schedule : 'S6'),
+          batchNumber: payload.batchNumber,
+          binLocation: payload.binLocation || 'VAULT',
+          inmateId: 'AUDIT-RESOLUTION',
+          recipientName: 'Discrepancy Investigation Resolution',
+          prescribingDoctor: 'Responsible Pharmacist Council Sign-Off',
+          quantity: 0,
+          balance: allCurrentBatchesSum,
+          expectedBatchCount: reconciledCount,
+          blindPhysicalCount: reconciledCount,
+          physicalCountStatus: 'COUNT_VERIFIED',
+          exceptionTags: ['RECONCILIATION_RESOLVED', 'DISCREPANCY_UNLOCKED', 'DUAL_CUSTODY_VERIFIED'],
+          initiator: {
+            id: initiator.id,
+            name: initiator.name,
+            roleLabel: initiator.roleLabel,
+            council: initiator.council,
+            regNumber: initiator.regNumber
+          },
+          witness: {
+            id: witness.id,
+            name: witness.name,
+            roleLabel: witness.roleLabel,
+            council: witness.council,
+            regNumber: witness.regNumber
+          },
+          pharmacistName: `${initiator.name} (${initiator.council} #${initiator.regNumber})`,
+          witnessName: `${witness.name} (${witness.council} #${witness.regNumber})`,
+          notes: `Discrepancy Investigation Resolved: ${payload.resolutionNotes || 'Recounted and reconciled with audit log'}. Batch unlocked to ACTIVE status with reconciled physical count of ${reconciledCount} units.`
+        };
+
+        setControlledRegister(prev => [...prev, newLedgerEntry]);
+        addToast('success', 'Batch Discrepancy Resolved', `Batch ${payload.batchNumber} has been unlocked and restored to ACTIVE status.`);
+        setModalState(prev => ({ ...prev, s5s6VarianceReportOpen: false }));
+        return true;
+      };
+
+      const handleInmateDispenseSubmit = (event) => {
+        event.preventDefault();
+
+        const inmate = modalState.dispensingInmate;
+        const drug = inventory.find(item => item.id === modalState.dispensingSelectedDrugId);
+        const regimen = inmate?.activeRegimen?.find(med => med.drugId === modalState.dispensingSelectedDrugId);
+        const quantity = Number(modalState.dispensingQty);
+
+        if (!inmate || !drug || !regimen) {
+          addToast('error', 'Regimen Medicine Not Found', 'Select a medicine from this inmate\'s active regimen that exists in inventory.');
+          return;
+        }
+
+        if (!Number.isSafeInteger(quantity) || quantity < 1) {
+          addToast('error', 'Invalid Dispense Quantity', 'Enter a whole number greater than zero.');
+          return;
+        }
+
+        const batch = getDispensableBatches(drug).find(
+          availableBatch => availableBatch.batchNumber === modalState.dispensingBatchNumber
+        );
+        if (!batch) {
+          addToast('error', 'No Dispensable Batch', 'This medicine has no selected, unexpired batch with available stock.');
+          return;
+        }
+
+        const requiresControlledIssue = ['S5', 'S6'].includes(drug.schedule);
+        const regimenRequiresControlledIssue = ['S5', 'S6'].includes(regimen.schedule);
+        if (regimenRequiresControlledIssue && !requiresControlledIssue) {
+          addToast('error', 'Schedule Mismatch', 'The regimen marks this medicine as Schedule 5/6, but inventory does not. Verify the record before dispensing.');
+          return;
+        }
+        if (requiresControlledIssue) {
+          setModalState(prev => ({
+            ...prev,
+            inmateDispenseOpen: false,
+            s5s6Open: true,
+            s5s6SelectedDrugId: drug.id,
+            s5s6InmateId: inmate.id,
+            s5s6BatchNumber: batch.batchNumber,
+            s5s6Quantity: quantity
+          }));
+          return;
+        }
+
+        if (batch.quantity < quantity) {
+          addToast('error', 'Insufficient Stock', `Batch ${batch.batchNumber} has ${batch.quantity} units available.`);
+          return;
+        }
+
+        const timestamp = new Date().toISOString();
+        const record = {
+          id: `DISP-${Date.now()}`,
+          timestamp,
+          inmateId: inmate.id,
+          inmateName: inmate.name,
+          drugId: drug.id,
+          drugName: drug.name,
+          dose: regimen.dose,
+          schedule: drug.schedule,
+          batchNumber: batch.batchNumber,
+          quantity,
+          prescribedBy: inmate.doctor,
+          dispensedBy: session.currentUser.name
+        };
+
+        setInventory(prev => prev.map(item => item.id === drug.id
+          ? {
+              ...item,
+              batches: item.batches.map(currentBatch => currentBatch.batchNumber === batch.batchNumber
+                ? { ...currentBatch, quantity: currentBatch.quantity - quantity }
+                : currentBatch)
+            }
+          : item
+        ));
+        setDispenseRecords(prev => [record, ...prev]);
+        addToast('success', 'Medicine Dispensed', `${quantity} unit${quantity === 1 ? '' : 's'} of ${drug.name} issued to ${inmate.name} from batch ${batch.batchNumber}.`);
+        setModalState(prev => ({
+          ...prev,
+          inmateDispenseOpen: false,
+          dispensingInmate: null,
+          dispensingSelectedDrugId: '',
+          dispensingBatchNumber: '',
+          dispensingQty: 1
+        }));
       };
 
       // --- FEFO DISPENSING DEDUCTION HANDLER ---
@@ -2347,17 +3328,55 @@ import React, { useState, useEffect, useReducer, useMemo, useRef } from 'react';
                         </span>
                       </div>
                       <p className="text-xs text-slate-300 max-w-3xl leading-relaxed">
-                        South African Pharmacy Council (SAPC) Good Pharmacy Practice (GPP) Section 8.4 mandates an unalterable register for all S5 and S6 substances. Every transaction is appended to a cryptographic SHA-256 hash chain linked to the responsible pharmacist’s 2FA verification.
+                        South African Pharmacy Council (SAPC) Good Pharmacy Practice (GPP) Section 8.4 mandates an unalterable register for all S5 and S6 substances. Every transaction is appended to a cryptographic SHA-256 hash chain requiring SAPC dual-custody authorization and blind physical safe verification.
                       </p>
                     </div>
 
-                    <div className="flex items-center gap-3">
+                    {/* S5/S6 EXCEPTION ENGINE QUICK-ACTION BUTTONS */}
+                    <div className="flex flex-wrap items-center gap-2">
                       <button
                         onClick={() => setModalState(prev => ({ ...prev, s5s6Open: true }))}
-                        className="px-4 py-2 bg-crimson-700 hover:bg-crimson-600 text-white font-semibold text-xs rounded-md shadow-md flex items-center gap-1.5 transition"
+                        className="px-3.5 py-2 bg-crimson-700 hover:bg-crimson-600 text-white font-bold text-xs rounded-md shadow-md flex items-center gap-1.5 transition"
+                        title="Issue S5/S6 with Blind Safe Count & Dual-Custody PINs"
                       >
                         <Icon name="plus" className="w-4 h-4" />
                         Issue / Dispense S5-S6
+                      </button>
+
+                      <button
+                        onClick={() => setModalState(prev => ({ ...prev, s5s6SplitBatchOpen: true }))}
+                        className="px-3.5 py-2 bg-amber-700 hover:bg-amber-600 text-amber-50 font-bold text-xs rounded-md shadow-md flex items-center gap-1.5 transition border border-amber-500/40"
+                        title="Automatically span issue across oldest and next FEFO batches"
+                      >
+                        <Icon name="layers" className="w-4 h-4 text-amber-200" />
+                        Split-Batch FEFO Issue
+                      </button>
+
+                      <button
+                        onClick={() => setModalState(prev => ({ ...prev, s5s6WastageOpen: true }))}
+                        className="px-3.5 py-2 bg-navy-800 hover:bg-red-900/60 text-red-200 font-bold text-xs rounded-md shadow-md flex items-center gap-1.5 transition border border-red-500/40"
+                        title="Deduct broken or contaminated ampoules with reason code"
+                      >
+                        <Icon name="trash" className="w-4 h-4 text-red-300" />
+                        Log Wastage / Breakage
+                      </button>
+
+                      <button
+                        onClick={() => setModalState(prev => ({ ...prev, s5s6ReturnOpen: true }))}
+                        className="px-3.5 py-2 bg-sky-900/80 hover:bg-sky-800 text-sky-100 font-bold text-xs rounded-md shadow-md flex items-center gap-1.5 transition border border-sky-500/40"
+                        title="Log unadministered dose returned from cell-block rounds"
+                      >
+                        <Icon name="refresh" className="w-4 h-4 text-sky-300" />
+                        Inmate Refusal / Return
+                      </button>
+
+                      <button
+                        onClick={() => setModalState(prev => ({ ...prev, s5s6AuditOpen: true }))}
+                        className="px-3.5 py-2 bg-navy-800 hover:bg-navy-700 text-slate-200 font-bold text-xs rounded-md shadow-md flex items-center gap-1.5 transition border border-slate-700"
+                        title="Blind Safe Audit: Compare physical count and flag discrepancy lock on variance"
+                      >
+                        <Icon name="shieldCheck" className="w-4 h-4 text-teal-400" />
+                        Safe Count Audit / Variance Check
                       </button>
                     </div>
                   </div>
@@ -2398,17 +3417,25 @@ import React, { useState, useEffect, useReducer, useMemo, useRef } from 'react';
                     .filter(m => m.schedule === 'S5' || m.schedule === 'S6')
                     .map(med => {
                       const totalUnits = med.batches.reduce((sum, b) => sum + b.quantity, 0);
+                      const hasLockedBatch = med.batches.some(b => b.discrepancyLocked);
                       return (
-                        <div key={med.id} className="bg-navy-900 border border-navy-800 hover:border-red-600/40 rounded-lg p-4 transition space-y-2">
+                        <div key={med.id} className={`bg-navy-900 border rounded-lg p-4 transition space-y-2 ${hasLockedBatch ? 'border-red-600 shadow-lg shadow-red-950/50' : 'border-navy-800 hover:border-red-600/40'}`}>
                           <div className="flex items-start justify-between">
                             <div>
                               <span className="text-xs font-mono text-red-400 font-bold">{med.schedule} CONTROLLED</span>
                               <h3 className="font-bold text-white text-sm">{med.name}</h3>
                             </div>
-                            <span className="p-1.5 bg-red-950 rounded text-red-400">
+                            <span className={`p-1.5 rounded ${hasLockedBatch ? 'bg-red-900 text-white animate-pulse' : 'bg-red-950 text-red-400'}`}>
                               <Icon name="lock" className="w-4 h-4" />
                             </span>
                           </div>
+
+                          {hasLockedBatch && (
+                            <div className="bg-red-950/90 border border-red-500 rounded p-2 text-[11px] text-red-200 flex items-center gap-2 animate-pulse">
+                              <Icon name="alertTriangle" className="w-4 h-4 text-red-400 flex-shrink-0" />
+                              <span><strong>DISCREPANCY LOCKDOWN:</strong> Batch quarantined under SAPC Act 101 §22A investigation.</span>
+                            </div>
+                          )}
 
                           <div className="flex items-baseline justify-between pt-2">
                             <span className="text-2xl font-extrabold text-white font-mono">{totalUnits}</span>
@@ -2417,9 +3444,54 @@ import React, { useState, useEffect, useReducer, useMemo, useRef } from 'react';
 
                           <div className="text-xs text-slate-400 space-y-1 pt-1 border-t border-navy-850">
                             {med.batches.map(b => (
-                              <div key={b.batchNumber} className="flex justify-between font-mono text-[11px]">
-                                <span>{b.batchNumber}</span>
-                                <span className="text-slate-200">{b.quantity} un. ({b.binLocation})</span>
+                              <div key={b.batchNumber} className={`flex items-center justify-between font-mono text-[11px] p-1.5 rounded transition ${b.discrepancyLocked ? 'bg-red-950/70 border border-red-500/60 text-red-200' : 'hover:bg-navy-850'}`}>
+                                <div className="flex items-center gap-1.5">
+                                  {b.discrepancyLocked ? (
+                                    <span className="px-1.5 py-0.5 bg-red-800 text-white rounded text-[9px] font-extrabold flex items-center gap-1 animate-pulse">
+                                      <Icon name="lock" className="w-2.5 h-2.5" /> LOCKED
+                                    </span>
+                                  ) : (
+                                    <span className="w-1.5 h-1.5 rounded-full bg-emerald-400"></span>
+                                  )}
+                                  <span className="font-semibold">{b.batchNumber}</span>
+                                </div>
+                                <div className="flex items-center gap-2">
+                                  <span className={b.discrepancyLocked ? 'text-red-300 font-bold' : 'text-slate-200'}>
+                                    {b.quantity} un. ({b.binLocation})
+                                  </span>
+                                  {b.discrepancyLocked && (
+                                    <button
+                                      onClick={() => {
+                                        const matchingEntry = controlledRegister.slice().reverse().find(e => e.batchNumber === b.batchNumber && e.type === 'DISCREPANCY_LOCK');
+                                        if (matchingEntry) {
+                                          setActiveVarianceIncident(matchingEntry);
+                                        } else {
+                                          setActiveVarianceIncident({
+                                            incidentId: `VAR-SAPC-2026-${Math.floor(1000 + Math.random() * 9000)}`,
+                                            timestamp: new Date().toISOString(),
+                                            drugId: med.id,
+                                            drugName: med.name,
+                                            emlCode: med.emlCode,
+                                            schedule: med.schedule,
+                                            batchNumber: b.batchNumber,
+                                            binLocation: b.binLocation,
+                                            expiryDate: b.expiryDate,
+                                            expectedBalance: b.quantity,
+                                            blindPhysicalCount: 'UNRECORDED',
+                                            varianceDelta: -1,
+                                            initiator: session.currentUser,
+                                            witness: staffList.find(s => s.id !== session.currentUser.id) || staffList[1],
+                                            notes: b.lockReason || 'Physical safe count variance detected.'
+                                          });
+                                        }
+                                        setModalState(prev => ({ ...prev, s5s6VarianceReportOpen: true }));
+                                      }}
+                                      className="px-2 py-0.5 bg-red-700 hover:bg-red-600 text-white rounded text-[10px] font-bold shadow"
+                                    >
+                                      Report
+                                    </button>
+                                  )}
+                                </div>
                               </div>
                             ))}
                           </div>
@@ -2430,12 +3502,55 @@ import React, { useState, useEffect, useReducer, useMemo, useRef } from 'react';
 
                 {/* IMMUTABLE AUDIT TABLE */}
                 <div className="bg-navy-900 border border-navy-800 rounded-lg overflow-hidden shadow-sm">
-                  <div className="p-4 bg-navy-850 border-b border-navy-800 flex items-center justify-between">
-                    <h3 className="text-xs font-semibold uppercase tracking-wider text-slate-200 flex items-center gap-2">
-                      <Icon name="database" className="w-4 h-4 text-teal-400" />
-                      Tamper-Evident Chronological Register Entries
-                    </h3>
-                    <span className="text-xs text-slate-400 font-mono">Act 101 Section 22A Schedule Ledger</span>
+                  <div className="p-4 bg-navy-850 border-b border-navy-800 flex flex-col md:flex-row md:items-center justify-between gap-3">
+                    <div>
+                      <h3 className="text-xs font-semibold uppercase tracking-wider text-slate-200 flex items-center gap-2">
+                        <Icon name="database" className="w-4 h-4 text-teal-400" />
+                        Tamper-Evident Chronological Register Entries
+                      </h3>
+                      <span className="text-[11px] text-slate-400 font-mono">Act 101 Section 22A Schedule Ledger • Dual-Custody Authenticated</span>
+                    </div>
+
+                    <div className="flex flex-wrap items-center gap-2">
+                      {/* Filter Tabs */}
+                      <div className="flex items-center bg-navy-950 p-1 rounded-md border border-navy-750 text-xs">
+                        {[
+                          { id: 'ALL', label: `All (${controlledRegister.length})` },
+                          { id: 'S5', label: 'S5' },
+                          { id: 'S6', label: 'S6' },
+                          { id: 'EXCEPTIONS', label: 'Exceptions' },
+                          { id: 'DISCREPANCIES', label: 'Locks' }
+                        ].map(tab => (
+                          <button
+                            key={tab.id}
+                            onClick={() => setRegisterFilter(tab.id)}
+                            className={`px-2.5 py-1 rounded text-[11px] font-semibold transition ${
+                              registerFilter === tab.id
+                                ? 'bg-crimson-800 text-white shadow'
+                                : 'text-slate-400 hover:text-slate-200'
+                            }`}
+                          >
+                            {tab.label}
+                          </button>
+                        ))}
+                      </div>
+
+                      {/* Search Box */}
+                      <div className="relative">
+                        <input
+                          type="text"
+                          placeholder="Search Register..."
+                          value={registerSearch}
+                          onChange={(e) => setRegisterSearch(e.target.value)}
+                          className="bg-navy-950 border border-navy-700 rounded px-2.5 py-1 text-xs text-white placeholder-slate-500 w-48 focus:outline-none focus:border-teal-400"
+                        />
+                        {registerSearch && (
+                          <button onClick={() => setRegisterSearch('')} className="absolute right-2 top-1.5 text-slate-400 hover:text-white">
+                            <Icon name="x" className="w-3.5 h-3.5" />
+                          </button>
+                        )}
+                      </div>
+                    </div>
                   </div>
 
                   <div className="overflow-x-auto">
@@ -2444,64 +3559,186 @@ import React, { useState, useEffect, useReducer, useMemo, useRef } from 'react';
                         <tr className="bg-navy-950 text-slate-400 uppercase text-[10px] tracking-wider border-b border-navy-800">
                           <th className="py-3 px-3">Tx ID / Hash</th>
                           <th className="py-3 px-3">Timestamp</th>
-                          <th className="py-3 px-3">Type</th>
+                          <th className="py-3 px-3">Type & Exceptions</th>
                           <th className="py-3 px-3">Medicine & Batch</th>
-                          <th className="py-3 px-3">Recipient / Inmate ID</th>
-                          <th className="py-3 px-3">Prescriber</th>
+                          <th className="py-3 px-3">Recipient / Reference</th>
                           <th className="py-3 px-3 text-right">Qty</th>
-                          <th className="py-3 px-3 text-right">Running Balance</th>
-                          <th className="py-3 px-3">Sign-off Signatures</th>
+                          <th className="py-3 px-3 text-right">Safe Balance</th>
+                          <th className="py-3 px-3">Physical Count Status</th>
+                          <th className="py-3 px-3">Dual Sign-Off (Initiator & Witness)</th>
+                          <th className="py-3 px-3 text-center">Dossier</th>
                         </tr>
                       </thead>
                       <tbody className="divide-y divide-navy-800 font-mono">
                         {controlledRegister
                           .slice()
                           .reverse()
-                          .map(entry => (
-                            <tr key={entry.id} className="hover:bg-navy-850/50 transition">
-                              <td className="py-3 px-3">
-                                <span className="font-bold text-slate-200 block">{entry.id}</span>
-                                <span className="text-[9px] text-teal-400 truncate block max-w-[120px]" title={entry.hash}>
-                                  # {entry.hash.substring(0, 14)}...
-                                </span>
-                              </td>
-                              <td className="py-3 px-3 text-slate-300 text-[11px]">
-                                {new Date(entry.timestamp).toLocaleString('en-ZA', { dateStyle: 'short', timeStyle: 'short' })}
-                              </td>
-                              <td className="py-3 px-3">
-                                <span className={`px-2 py-0.5 rounded text-[10px] font-bold ${
-                                  entry.type === 'RECEIPT' 
-                                    ? 'bg-emerald-950 text-emerald-300 border border-emerald-700' 
-                                    : entry.type === 'DESTRUCTION'
-                                    ? 'bg-red-950 text-red-300 border border-red-700'
-                                    : 'bg-navy-800 text-teal-300 border border-teal-500/30'
-                                }`}>
-                                  {entry.type}
-                                </span>
-                              </td>
-                              <td className="py-3 px-3 font-sans">
-                                <span className="font-semibold text-slate-100 block text-xs">{entry.drugName}</span>
-                                <span className="text-[10px] text-slate-400 font-mono">Batch: {entry.batchNumber}</span>
-                              </td>
-                              <td className="py-3 px-3 font-sans">
-                                <span className="font-medium text-slate-200 block text-xs">{entry.recipientName}</span>
-                                <span className="text-[10px] text-slate-400 font-mono">{entry.inmateId}</span>
-                              </td>
-                              <td className="py-3 px-3 font-sans text-xs text-slate-300">
-                                {entry.prescribingDoctor}
-                              </td>
-                              <td className={`py-3 px-3 text-right font-bold text-sm ${entry.quantity > 0 ? 'text-emerald-400' : 'text-red-400'}`}>
-                                {entry.quantity > 0 ? `+${entry.quantity}` : entry.quantity}
-                              </td>
-                              <td className="py-3 px-3 text-right font-bold text-slate-100 text-sm">
-                                {entry.balance}
-                              </td>
-                              <td className="py-3 px-3 font-sans text-[11px] text-slate-400">
-                                <div className="text-slate-200">{entry.pharmacistName}</div>
-                                <div className="text-slate-500 text-[10px]">Wit: {entry.witnessName}</div>
-                              </td>
-                            </tr>
-                          ))}
+                          .filter(entry => {
+                            if (registerFilter === 'S5' && entry.schedule !== 'S5') return false;
+                            if (registerFilter === 'S6' && entry.schedule !== 'S6') return false;
+                            if (registerFilter === 'EXCEPTIONS') {
+                              const isException = entry.type === 'FEFO_SPLIT' || entry.type === 'WASTAGE' || entry.type === 'INMATE_RETURN' || entry.type === 'DISCREPANCY_LOCK' || entry.type === 'RECONCILIATION_UNLOCKED' || (entry.exceptionTags && entry.exceptionTags.some(t => t.includes('SPLIT') || t.includes('WASTE') || t.includes('REFUSAL') || t.includes('DISCREPANCY')));
+                              if (!isException) return false;
+                            }
+                            if (registerFilter === 'DISCREPANCIES') {
+                              if (entry.type !== 'DISCREPANCY_LOCK' && entry.physicalCountStatus !== 'VARIANCE_FLAGGED') return false;
+                            }
+                            if (registerSearch.trim()) {
+                              const q = registerSearch.toLowerCase();
+                              const str = `${entry.id} ${entry.drugName} ${entry.batchNumber} ${entry.inmateId} ${entry.recipientName} ${entry.pharmacistName} ${entry.witnessName} ${entry.type} ${(entry.exceptionTags || []).join(' ')}`.toLowerCase();
+                              if (!str.includes(q)) return false;
+                            }
+                            return true;
+                          })
+                          .map(entry => {
+                            const initiator = entry.initiator || {
+                              name: entry.pharmacistName || 'Pharm. L. Venter',
+                              roleLabel: 'Responsible Pharmacist',
+                              council: 'SAPC',
+                              regNumber: '48912'
+                            };
+                            const witness = entry.witness || {
+                              name: entry.witnessName || 'Sr. P. Dlamini, RN',
+                              roleLabel: 'Registered Nurse',
+                              council: 'SANC',
+                              regNumber: '10948'
+                            };
+                            const tags = entry.exceptionTags || [];
+                            const isVariance = entry.type === 'DISCREPANCY_LOCK' || entry.physicalCountStatus === 'VARIANCE_FLAGGED';
+
+                            return (
+                              <tr key={entry.id} className={`hover:bg-navy-850/50 transition ${isVariance ? 'bg-red-950/20' : ''}`}>
+                                <td className="py-3 px-3">
+                                  <span className="font-bold text-slate-200 block">{entry.id}</span>
+                                  <span className="text-[9px] text-teal-400 truncate block max-w-[120px]" title={entry.hash}>
+                                    # {entry.hash.substring(0, 14)}...
+                                  </span>
+                                </td>
+                                <td className="py-3 px-3 text-slate-300 text-[11px]">
+                                  {new Date(entry.timestamp).toLocaleString('en-ZA', { dateStyle: 'short', timeStyle: 'short' })}
+                                </td>
+                                <td className="py-3 px-3 space-y-1">
+                                  <div>
+                                    <span className={`px-2 py-0.5 rounded text-[10px] font-bold ${
+                                      entry.type === 'RECEIPT' 
+                                        ? 'bg-emerald-950 text-emerald-300 border border-emerald-700' 
+                                        : entry.type === 'DESTRUCTION' || entry.type === 'WASTAGE'
+                                        ? 'bg-purple-950 text-purple-300 border border-purple-700'
+                                        : entry.type === 'INMATE_RETURN'
+                                        ? 'bg-sky-950 text-sky-300 border border-sky-700'
+                                        : entry.type === 'FEFO_SPLIT'
+                                        ? 'bg-amber-950 text-amber-300 border border-amber-600'
+                                        : entry.type === 'DISCREPANCY_LOCK'
+                                        ? 'bg-red-950 text-red-300 border border-red-600 animate-pulse'
+                                        : entry.type === 'RECONCILIATION_UNLOCKED'
+                                        ? 'bg-teal-950 text-teal-300 border border-teal-600'
+                                        : 'bg-navy-800 text-teal-300 border border-teal-500/30'
+                                    }`}>
+                                      {entry.type}
+                                    </span>
+                                  </div>
+                                  {tags.length > 0 && (
+                                    <div className="flex flex-wrap gap-1">
+                                      {tags.slice(0, 2).map((t, idx) => (
+                                        <span key={idx} className="bg-navy-950 text-slate-400 border border-navy-700 text-[9px] px-1 rounded font-mono">
+                                          {t}
+                                        </span>
+                                      ))}
+                                    </div>
+                                  )}
+                                </td>
+                                <td className="py-3 px-3 font-sans">
+                                  <div className="flex items-center gap-1.5">
+                                    <span className="text-[10px] font-mono px-1 bg-red-950 text-red-300 border border-red-800 rounded font-bold">{entry.schedule}</span>
+                                    <span className="font-semibold text-slate-100 text-xs truncate max-w-[170px]" title={entry.drugName}>{entry.drugName}</span>
+                                  </div>
+                                  <span className="text-[10px] text-slate-400 font-mono block mt-0.5">Batch: {entry.batchNumber}</span>
+                                </td>
+                                <td className="py-3 px-3 font-sans">
+                                  <span className="font-medium text-slate-200 block text-xs">{entry.recipientName}</span>
+                                  <span className="text-[10px] text-slate-400 font-mono">{entry.inmateId}</span>
+                                </td>
+                                <td className={`py-3 px-3 text-right font-bold text-sm ${entry.quantity > 0 ? 'text-emerald-400' : entry.quantity < 0 ? 'text-red-400' : 'text-slate-400'}`}>
+                                  {entry.quantity > 0 ? `+${entry.quantity}` : entry.quantity}
+                                </td>
+                                <td className="py-3 px-3 text-right font-bold text-slate-100 text-sm">
+                                  {entry.balance}
+                                </td>
+                                <td className="py-3 px-3 font-sans">
+                                  {entry.physicalCountStatus === 'VARIANCE_FLAGGED' ? (
+                                    <div>
+                                      <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[10px] font-bold bg-red-950 text-red-300 border border-red-600 animate-pulse">
+                                        <Icon name="alertTriangle" className="w-3 h-3" /> VARIANCE LOCKED
+                                      </span>
+                                      <span className="text-[9px] text-red-400 font-mono block mt-0.5">
+                                        Count: {entry.blindPhysicalCount} (Diff: {entry.varianceDelta > 0 ? '+' : ''}{entry.varianceDelta} un)
+                                      </span>
+                                    </div>
+                                  ) : entry.physicalCountStatus === 'SPLIT_VERIFIED' ? (
+                                    <div>
+                                      <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[10px] font-bold bg-teal-950 text-teal-300 border border-teal-700/60">
+                                        <Icon name="layers" className="w-3 h-3" /> SPLIT VERIFIED
+                                      </span>
+                                      <span className="text-[9px] text-slate-400 font-mono block mt-0.5">FEFO Spanned</span>
+                                    </div>
+                                  ) : entry.physicalCountStatus === 'WASTE_VERIFIED' ? (
+                                    <div>
+                                      <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[10px] font-bold bg-purple-950 text-purple-300 border border-purple-700/60">
+                                        <Icon name="trash" className="w-3 h-3" /> WASTE AUDITED
+                                      </span>
+                                      <span className="text-[9px] text-slate-400 font-mono block mt-0.5">Disposal Sealed</span>
+                                    </div>
+                                  ) : entry.physicalCountStatus === 'RETURN_INSPECTED' ? (
+                                    <div>
+                                      <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[10px] font-bold bg-sky-950 text-sky-300 border border-sky-700/60">
+                                        <Icon name="refresh" className="w-3 h-3" /> RETURN INSPECTED
+                                      </span>
+                                      <span className="text-[9px] text-slate-400 font-mono block mt-0.5">Cell Round Return</span>
+                                    </div>
+                                  ) : (
+                                    <div>
+                                      <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[10px] font-bold bg-emerald-950 text-emerald-300 border border-emerald-700/60">
+                                        <Icon name="shieldCheck" className="w-3 h-3" /> COUNT VERIFIED
+                                      </span>
+                                      <span className="text-[9px] text-slate-400 font-mono block mt-0.5">
+                                        Count: {entry.blindPhysicalCount || entry.balance} un
+                                      </span>
+                                    </div>
+                                  )}
+                                </td>
+                                <td className="py-3 px-3 font-sans text-[11px] space-y-1">
+                                  <div className="inline-flex items-center gap-1 px-2 py-0.5 bg-navy-800 text-teal-300 border border-teal-500/30 rounded text-[10px] font-semibold block w-fit">
+                                    <span className="text-teal-400 font-bold">INIT:</span> {initiator.name} [{initiator.council} #{initiator.regNumber}]
+                                  </div>
+                                  <div className="inline-flex items-center gap-1 px-2 py-0.5 bg-navy-950 text-amber-300 border border-amber-600/40 rounded text-[10px] font-semibold block w-fit">
+                                    <span className="text-amber-400 font-bold">WIT:</span> {witness.name} [{witness.council} #{witness.regNumber}]
+                                  </div>
+                                </td>
+                                <td className="py-3 px-3 text-center">
+                                  {isVariance ? (
+                                    <button
+                                      onClick={() => {
+                                        setActiveVarianceIncident(entry);
+                                        setModalState(prev => ({ ...prev, s5s6VarianceReportOpen: true }));
+                                      }}
+                                      className="px-2.5 py-1 bg-red-700 hover:bg-red-600 text-white rounded text-[10px] font-bold shadow flex items-center gap-1 mx-auto"
+                                    >
+                                      <Icon name="printer" className="w-3 h-3" /> Report
+                                    </button>
+                                  ) : (
+                                    <button
+                                      onClick={() => {
+                                        alert(`SAPC Cryptographic Ledger Block Audit:\n\nBlock ID: ${entry.id}\nTimestamp: ${entry.timestamp}\nType: ${entry.type}\nMedicine: ${entry.drugName}\nBatch: ${entry.batchNumber}\nStatus: ${entry.physicalCountStatus || 'VERIFIED'}\nInitiator: ${initiator.name} (${initiator.council} #${initiator.regNumber})\nWitness: ${witness.name} (${witness.council} #${witness.regNumber})\nPrev Hash: ${entry.prevHash}\nHash: ${entry.hash}\nNotes: ${entry.notes || 'Routine sign-off'}`);
+                                      }}
+                                      className="px-2 py-0.5 bg-navy-800 hover:bg-navy-700 text-slate-300 border border-navy-700 rounded text-[10px] font-mono"
+                                    >
+                                      Audit
+                                    </button>
+                                  )}
+                                </td>
+                              </tr>
+                            );
+                          })}
                       </tbody>
                     </table>
                   </div>
@@ -2582,6 +3819,7 @@ import React, { useState, useEffect, useReducer, useMemo, useRef } from 'react';
                     })
                     .map(inmate => {
                       const hasAllergy = inmate.allergies.some(a => !a.includes('NONE'));
+                      const latestDispenseRecord = dispenseRecords.find(record => record.inmateId === inmate.id);
 
                       return (
                         <div key={inmate.id} className="bg-navy-900 border border-navy-800 rounded-lg p-5 shadow-sm space-y-4 hover:border-navy-700 transition">
@@ -2609,16 +3847,16 @@ import React, { useState, useEffect, useReducer, useMemo, useRef } from 'react';
                             <div className="flex items-center gap-2">
                               <button
                                 onClick={() => {
-                                  const firstMed = inmate.activeRegimen[0];
+                                  const firstMed = inmate.activeRegimen?.[0];
+                                  const firstDrug = inventory.find(item => item.id === firstMed?.drugId);
+                                  const firstBatch = getDispensableBatches(firstDrug)[0];
                                   setModalState(prev => ({
                                     ...prev,
                                     inmateDispenseOpen: true,
                                     dispensingInmate: inmate,
-                                    dispensingSelectedDrugId: firstMed ? firstMed.drugId : inventory[0].id,
-                                    dispensingQty: 1,
-        supplierModalOpen: false,
-        supplierModalTab: 'list',
-        mobileMenuOpen: false
+                                    dispensingSelectedDrugId: firstMed?.drugId || '',
+                                    dispensingBatchNumber: firstBatch?.batchNumber || '',
+                                    dispensingQty: 1
                                   }));
                                 }}
                                 className="px-2.5 py-1.5 bg-teal-700 hover:bg-teal-600 text-white rounded text-xs font-semibold flex items-center gap-1 transition shadow"
@@ -2710,6 +3948,15 @@ import React, { useState, useEffect, useReducer, useMemo, useRef } from 'react';
                               ))}
                             </div>
                           </div>
+
+                          {latestDispenseRecord && (
+                            <div className="bg-navy-950 border border-teal-500/20 rounded px-3 py-2 text-[11px] text-slate-400">
+                              <span className="text-teal-300 font-semibold">Last stock issue:</span>{' '}
+                              {latestDispenseRecord.quantity} unit{latestDispenseRecord.quantity === 1 ? '' : 's'} of {latestDispenseRecord.drugName}
+                              {' • '}Batch {latestDispenseRecord.batchNumber}
+                              {' • '}{new Date(latestDispenseRecord.timestamp).toLocaleString('en-ZA')}
+                            </div>
+                          )}
 
                           {/* Clinical Notes & Doctor */}
                           <div className="pt-2 border-t border-navy-850 flex items-center justify-between text-xs text-slate-400">
@@ -3712,7 +4959,7 @@ import React, { useState, useEffect, useReducer, useMemo, useRef } from 'react';
             );
           })()}
 
-          /* 1. GOODS RECEIVED VOUCHER (GRV) INTAKE MODAL */}
+          {/* 1. GOODS RECEIVED VOUCHER (GRV) INTAKE MODAL */}
           {modalState.grvOpen && (
             <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm">
               <div className="bg-navy-900 border border-navy-700 rounded-lg max-w-lg w-full p-6 space-y-4 shadow-2xl">
@@ -3827,168 +5074,1407 @@ import React, { useState, useEffect, useReducer, useMemo, useRef } from 'react';
           )}
 
           {/* 2. SCHEDULE 5 / 6 INTERACTIVE DISPENSING & 2FA PIN MODAL */}
-          {modalState.s5s6Open && (
-            <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/85 backdrop-blur-sm">
-              <div className="bg-navy-900 border-2 border-red-700 rounded-lg max-w-lg w-full p-6 space-y-4 shadow-2xl">
-                <div className="flex items-center justify-between pb-3 border-b border-red-900/60">
-                  <div className="flex items-center space-x-2">
-                    <Icon name="lock" className="w-6 h-6 text-red-400" />
-                    <div>
-                      <h3 className="text-base font-bold text-white">SAPC Schedule 5 & 6 Controlled Issue</h3>
-                      <span className="text-[10px] text-red-300 font-mono">Act 101/1965 Section 22A Compliance Workflow</span>
+                    {/* ========================================================================= */}
+          {/* 1. UPGRADED S5/S6 CONTROLLED DISPENSING & DUAL-CONTROL WITNESS MODAL      */}
+          {/* ========================================================================= */}
+          {modalState.s5s6Open && (() => {
+            const controlledMeds = inventory.filter(i => i.schedule === 'S5' || i.schedule === 'S6');
+            const currentDrug = inventory.find(m => m.id === (modalState.s5s6SelectedDrugId || controlledMeds[0]?.id)) || controlledMeds[0];
+            const activeBatches = currentDrug?.batches || [];
+            const defaultWitness = staffList.find(s => s.id !== session.currentUser.id) || staffList[0];
+            const currentWitness = staffList.find(s => s.id === (modalState.s5s6WitnessId || defaultWitness?.id)) || defaultWitness;
+            const isSelfVerification = currentWitness?.id === session.currentUser.id;
+
+            return (
+              <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/85 backdrop-blur-sm">
+                <div className="bg-navy-900 border-2 border-red-700 rounded-lg max-w-xl w-full p-6 space-y-4 shadow-2xl max-h-[92vh] overflow-y-auto">
+                  <div className="flex items-center justify-between pb-3 border-b border-red-900/60">
+                    <div className="flex items-center space-x-2">
+                      <Icon name="lock" className="w-6 h-6 text-red-400" />
+                      <div>
+                        <h3 className="text-base font-bold text-white">SAPC Schedule 5 & 6 Controlled Issue</h3>
+                        <span className="text-[10px] text-red-300 font-mono">Act 101/1965 §22A • Mandatory Blind Safe Count & Dual Custody</span>
+                      </div>
                     </div>
+                    <button onClick={() => setModalState(prev => ({
+                      ...prev,
+                      s5s6Open: false,
+                      s5s6InmateId: '',
+                      s5s6BatchNumber: '',
+                      s5s6Quantity: 1
+                    }))} className="text-slate-400 hover:text-white">
+                      <Icon name="x" className="w-5 h-5" />
+                    </button>
                   </div>
-                  <button onClick={() => setModalState(prev => ({ ...prev, s5s6Open: false }))} className="text-slate-400 hover:text-white">
-                    <Icon name="x" className="w-5 h-5" />
-                  </button>
+
+                  {/* Assistant Notice if active */}
+                  {!session.currentUser.canAccessS5S6 && (
+                    <div className="bg-red-950 border border-red-600 rounded p-2.5 text-xs text-red-200 flex items-center gap-2">
+                      <Icon name="lock" className="w-4 h-4 text-red-400 flex-shrink-0" />
+                      <div>
+                        <strong className="text-red-300 block uppercase text-[10px]">Responsible Pharmacist Co-Sign Required:</strong>
+                        <span>As a {session.currentUser.roleLabel}, Act 101 requires the Responsible Pharmacist master PIN (7492) to countersign this vault issue.</span>
+                      </div>
+                    </div>
+                  )}
+
+                  <form onSubmit={(e) => {
+                    e.preventDefault();
+                    if (isSelfVerification) {
+                      addToast('error', 'Dual-Custody Violation', 'Initiator and Witness cannot be the same staff member.');
+                      return;
+                    }
+                    const form = e.target;
+                    const selInmate = inmates.find(i => i.id === form.inmateId.value);
+
+                    handleS5S6Submit({
+                      drugId: currentDrug.id,
+                      batchNumber: form.batchNumber.value,
+                      blindPhysicalCount: form.blindPhysicalCount.value,
+                      quantity: parseInt(form.quantity.value, 10),
+                      inmateId: form.inmateId.value,
+                      recipientName: selInmate ? `${selInmate.name} (${selInmate.cellBlock})` : 'Correctional Hospital Issue',
+                      doctor: form.doctor.value,
+                      txType: form.txType.value,
+                      initiator: session.currentUser,
+                      initiatorPin: form.initiatorPin.value,
+                      witnessId: currentWitness.id,
+                      witnessPin: form.witnessPin.value,
+                      notes: form.notes.value
+                    });
+                  }} className="space-y-3.5 text-xs">
+                    
+                    {/* Controlled Drug Selection */}
+                    <div>
+                      <label className="text-slate-300 font-semibold block mb-1">Controlled Substance (Schedule 5 or 6):</label>
+                      <select
+                        value={currentDrug?.id}
+                        onChange={(e) => setModalState(prev => ({ ...prev, s5s6SelectedDrugId: e.target.value }))}
+                        required
+                        className="w-full bg-navy-950 border border-navy-700 rounded p-2 text-slate-100 font-semibold text-xs focus:border-red-400"
+                      >
+                        {controlledMeds.map(i => (
+                          <option key={i.id} value={i.id}>
+                            [{i.schedule}] {i.name} — {i.form} ({i.emlCode})
+                          </option>
+                        ))}
+                      </select>
+                    </div>
+
+                    {/* Batch Selection with Blind Notice */}
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                      <div>
+                        <label className="text-slate-300 font-semibold block mb-1">Select Vault Batch:</label>
+                        <select
+                          name="batchNumber"
+                          required
+                          defaultValue={activeBatches.some(batch => batch.batchNumber === modalState.s5s6BatchNumber)
+                            ? modalState.s5s6BatchNumber
+                            : activeBatches[0]?.batchNumber || ''}
+                          className="w-full bg-navy-950 border border-navy-700 rounded p-2 text-slate-100 font-mono text-xs focus:border-red-400"
+                        >
+                          {activeBatches.map(b => (
+                            <option key={b.batchNumber} value={b.batchNumber} disabled={b.discrepancyLocked}>
+                              {b.batchNumber} • Exp: {b.expiryDate} ({b.binLocation}){b.discrepancyLocked ? ' [LOCKED - DISCREPANCY]' : ' [Count Required]'}
+                            </option>
+                          ))}
+                        </select>
+                      </div>
+                      <div>
+                        <label className="text-slate-300 font-semibold block mb-1">Issue Quantity (Dose Units):</label>
+                        <input name="quantity" type="number" min="1" max="50" defaultValue={modalState.s5s6Quantity || 1} required className="w-full bg-navy-950 border border-navy-700 rounded p-2 text-white font-bold" />
+                      </div>
+                    </div>
+
+                    {/* MANDATORY BLIND SAFE COUNT STEP */}
+                    <div className="bg-navy-950 p-3 rounded-lg border-2 border-amber-600/60 space-y-2">
+                      <div className="flex items-center justify-between">
+                        <label className="text-amber-300 font-bold flex items-center gap-1.5 text-xs">
+                          <Icon name="shield" className="w-4 h-4 text-amber-400" />
+                          Step 1: Blind Physical Safe Count Remaining (Mandatory):
+                        </label>
+                        <span className="text-[10px] bg-amber-900/80 text-amber-200 border border-amber-500 px-2 py-0.5 rounded font-mono font-bold">
+                          BLIND AUDIT
+                        </span>
+                      </div>
+                      <p className="text-[11px] text-slate-400 leading-normal">
+                        Under SAPC GPP Rule 8.4, the expected balance is strictly hidden. Physically count the remaining units in the vault safe right now. If your count does not reconcile with the immutable ledger, the batch is immediately frozen under <strong className="text-red-400 font-mono">DISCREPANCY_LOCKED</strong>.
+                      </p>
+                      <input
+                        name="blindPhysicalCount"
+                        type="number"
+                        min="0"
+                        required
+                        placeholder="Enter physical units currently counted in vault safe..."
+                        className="w-full bg-navy-900 border border-amber-500/80 rounded p-2 text-white font-mono text-sm font-bold tracking-wider placeholder-slate-500 focus:outline-none focus:border-amber-400"
+                      />
+                    </div>
+
+                    {/* Recipient Inmate Selection */}
+                    <div>
+                      <label className="text-slate-300 font-semibold block mb-1">Recipient Inmate & Cell Block:</label>
+                      <select
+                        name="inmateId"
+                        required
+                        defaultValue={inmates.some(inmate => inmate.id === modalState.s5s6InmateId)
+                          ? modalState.s5s6InmateId
+                          : inmates[0]?.id || ''}
+                        className="w-full bg-navy-950 border border-navy-700 rounded p-2 text-slate-100 font-mono text-xs"
+                      >
+                        {inmates.map(inmate => (
+                          <option key={inmate.id} value={inmate.id}>
+                            {inmate.id} — {inmate.name} ({inmate.cellBlock})
+                          </option>
+                        ))}
+                      </select>
+                    </div>
+
+                    <div className="grid grid-cols-2 gap-3">
+                      <div>
+                        <label className="text-slate-300 font-semibold block mb-1">Prescribing Doctor (HPCSA MP):</label>
+                        <input name="doctor" required defaultValue="Dr. R. Naidoo (MP 0554210)" className="w-full bg-navy-950 border border-navy-700 rounded p-2 text-slate-100" />
+                      </div>
+                      <div>
+                        <label className="text-slate-300 font-semibold block mb-1">Transaction Category:</label>
+                        <select name="txType" className="w-full bg-navy-950 border border-navy-700 rounded p-2 text-slate-100">
+                          <option value="DISPENSE">DISPENSE (Inmate Issue)</option>
+                          <option value="DESTRUCTION">DESTRUCTION / CLINICAL WASTE</option>
+                        </select>
+                      </div>
+                    </div>
+
+                    <div>
+                      <label className="text-slate-300 font-semibold block mb-1">Clinical Indication & Script Ref:</label>
+                      <input name="notes" placeholder="e.g. Breakthrough analgesia under direct nursing sister supervision" required defaultValue="Acute clinical pain management under direct nursing sister supervision." className="w-full bg-navy-950 border border-navy-700 rounded p-2 text-slate-100" />
+                    </div>
+
+                    {/* MANDATORY SAPC DUAL-CUSTODY AUTHORIZATION SECTION */}
+                    <div className="bg-navy-950 p-3.5 rounded-lg border-2 border-red-500/50 space-y-3">
+                      <div className="flex items-center justify-between border-b border-navy-800 pb-2">
+                        <div className="flex items-center gap-2">
+                          <span className="p-1 bg-red-900/60 rounded text-red-300">
+                            <Icon name="users" className="w-4 h-4" />
+                          </span>
+                          <div>
+                            <h4 className="text-xs font-bold text-white uppercase tracking-wider">
+                              Step 2: SAPC Dual-Control Custody Authorization
+                            </h4>
+                            <span className="text-[10px] text-slate-400 font-mono">
+                              Requires two distinct licensed healthcare professionals
+                            </span>
+                          </div>
+                        </div>
+                        <span className="px-2 py-0.5 bg-red-950 border border-red-700 text-red-300 text-[10px] font-mono font-bold rounded">
+                          DUAL CUSTODY
+                        </span>
+                      </div>
+
+                      {isSelfVerification && (
+                        <div className="bg-red-950/90 border border-red-500 rounded p-2.5 text-xs text-red-200 flex items-center gap-2 animate-bounce">
+                          <Icon name="alertTriangle" className="w-4 h-4 text-red-400 flex-shrink-0" />
+                          <div>
+                            <strong className="block text-red-300 uppercase text-[10px]">Self-Verification Strictly Blocked:</strong>
+                            <span>SAPC GPP Rule 8.4 prohibits self-authorization. Initiator and Witness must be two different staff members.</span>
+                          </div>
+                        </div>
+                      )}
+
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-3 text-xs">
+                        {/* Initiator Cadre */}
+                        <div className="bg-navy-900 p-2.5 rounded border border-navy-800 space-y-1.5">
+                          <div className="flex items-center justify-between text-[11px]">
+                            <span className="text-teal-400 font-bold uppercase tracking-wider">1. Initiating Clinician:</span>
+                            <span className="text-[10px] font-mono text-slate-400">{session.currentUser.council} #{session.currentUser.regNumber}</span>
+                          </div>
+                          <div className="text-white font-semibold">{session.currentUser.name}</div>
+                          <div className="text-[11px] text-slate-400">{session.currentUser.roleLabel}</div>
+                          <div className="pt-1">
+                            <label className="text-[10px] text-slate-400 block mb-0.5">
+                              Initiator PIN (Demo: <strong className="text-teal-300 font-mono">{session.currentUser.pin}</strong>):
+                            </label>
+                            <input
+                              name="initiatorPin"
+                              type="password"
+                              maxLength="6"
+                              required
+                              placeholder={`Enter PIN (${session.currentUser.pin})`}
+                              className="w-full bg-navy-950 border border-navy-700 rounded p-1.5 text-center font-mono text-sm tracking-widest text-white focus:border-teal-400"
+                            />
+                          </div>
+                        </div>
+
+                        {/* Secondary Witness Cadre */}
+                        <div className="bg-navy-900 p-2.5 rounded border border-navy-800 space-y-1.5">
+                          <div className="flex items-center justify-between text-[11px]">
+                            <span className="text-amber-400 font-bold uppercase tracking-wider">2. Secondary Witness:</span>
+                            <span className="text-[10px] font-mono text-slate-400">Distinct Staff Member</span>
+                          </div>
+                          <select
+                            value={currentWitness?.id}
+                            onChange={(e) => setModalState(prev => ({ ...prev, s5s6WitnessId: e.target.value }))}
+                            className="w-full bg-navy-950 border border-navy-700 rounded p-1.5 text-slate-100 text-xs font-semibold focus:border-amber-400"
+                          >
+                            {staffList.map(s => (
+                              <option key={s.id} value={s.id} disabled={s.id === session.currentUser.id}>
+                                {s.name} ({s.roleLabel}) {s.id === session.currentUser.id ? '— [CANNOT SELF-WITNESS]' : ''}
+                              </option>
+                            ))}
+                          </select>
+                          <div className="text-[10px] text-slate-400 flex justify-between">
+                            <span>License: {currentWitness?.council} #{currentWitness?.regNumber}</span>
+                            <span>Clearance Lvl {currentWitness?.clearanceLevel}</span>
+                          </div>
+                          <div className="pt-1">
+                            <label className="text-[10px] text-slate-400 block mb-0.5">
+                              Witness PIN (Demo: <strong className="text-amber-300 font-mono">{currentWitness?.pin}</strong>):
+                            </label>
+                            <input
+                              name="witnessPin"
+                              type="password"
+                              maxLength="6"
+                              required
+                              placeholder={`Enter PIN (${currentWitness?.pin})`}
+                              className="w-full bg-navy-950 border border-navy-700 rounded p-1.5 text-center font-mono text-sm tracking-widest text-white focus:border-amber-400"
+                            />
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+
+                    <div className="pt-3 border-t border-navy-800 flex justify-end gap-2">
+                      <button type="button" onClick={() => setModalState(prev => ({
+                        ...prev,
+                        s5s6Open: false,
+                        s5s6InmateId: '',
+                        s5s6BatchNumber: '',
+                        s5s6Quantity: 1
+                      }))} className="px-3 py-2 bg-navy-800 text-slate-300 rounded font-medium hover:bg-navy-700">
+                        Cancel
+                      </button>
+                      <button
+                        type="submit"
+                        disabled={isSelfVerification}
+                        className={`px-4 py-2 text-white rounded font-bold shadow-lg flex items-center gap-1.5 ${
+                          isSelfVerification ? 'bg-slate-700 cursor-not-allowed opacity-50' : 'bg-crimson-700 hover:bg-crimson-600'
+                        }`}
+                      >
+                        <Icon name="lock" className="w-4 h-4" />
+                        Verify Safe Count & Seal Issue
+                      </button>
+                    </div>
+                  </form>
                 </div>
+              </div>
+            );
+          })()}
 
-                {/* Assistant Notice if active */}
-                {!session.currentUser.canAccessS5S6 && (
-                  <div className="bg-red-950 border border-red-600 rounded p-2.5 text-xs text-red-200 flex items-center gap-2">
-                    <Icon name="lock" className="w-4 h-4 text-red-400 flex-shrink-0" />
-                    <div>
-                      <strong className="text-red-300 block uppercase text-[10px]">Responsible Pharmacist Co-Sign Required:</strong>
-                      <span>As a {session.currentUser.roleLabel}, Act 101 requires the Responsible Pharmacist master PIN (7492) to countersign this vault issue.</span>
+          {/* ========================================================================= */}
+          {/* 2. SPLIT-BATCH FEFO ISSUE MODAL                                           */}
+          {/* ========================================================================= */}
+          {modalState.s5s6SplitBatchOpen && (() => {
+            const controlledMeds = inventory.filter(i => i.schedule === 'S5' || i.schedule === 'S6');
+            const currentDrug = inventory.find(m => m.id === (modalState.s5s6SplitDrugId || controlledMeds[0]?.id)) || controlledMeds[0];
+            const requestedQty = parseInt(modalState.s5s6SplitQty !== undefined ? modalState.s5s6SplitQty : 15, 10) || 15;
+            
+            // Available batches sorted by FEFO
+            const availableBatches = (currentDrug?.batches || [])
+              .filter(b => !b.discrepancyLocked && !b.quarantined && b.quantity > 0)
+              .sort((a, b) => new Date(a.expiryDate) - new Date(b.expiryDate));
+
+            let remaining = requestedQty;
+            const splitAllocations = [];
+            for (const b of availableBatches) {
+              if (remaining <= 0) break;
+              const take = Math.min(b.quantity, remaining);
+              splitAllocations.push({
+                batchNumber: b.batchNumber,
+                expiryDate: b.expiryDate,
+                binLocation: b.binLocation,
+                allocated: take,
+                currentQty: b.quantity,
+                leavingQty: b.quantity - take
+              });
+              remaining -= take;
+            }
+
+            const defaultWitness = staffList.find(s => s.id !== session.currentUser.id) || staffList[0];
+            const currentWitness = staffList.find(s => s.id === (modalState.s5s6SplitWitnessId || defaultWitness?.id)) || defaultWitness;
+            const isSelfVerification = currentWitness?.id === session.currentUser.id;
+
+            return (
+              <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/85 backdrop-blur-sm">
+                <div className="bg-navy-900 border-2 border-amber-600 rounded-lg max-w-xl w-full p-6 space-y-4 shadow-2xl max-h-[92vh] overflow-y-auto">
+                  <div className="flex items-center justify-between pb-3 border-b border-amber-900/60">
+                    <div className="flex items-center space-x-2">
+                      <Icon name="layers" className="w-6 h-6 text-amber-400" />
+                      <div>
+                        <h3 className="text-base font-bold text-white">Split-Batch FEFO Issue Engine</h3>
+                        <span className="text-[10px] text-amber-300 font-mono">Automatic Multi-Batch Allocation under First-Expiring, First-Out</span>
+                      </div>
                     </div>
+                    <button onClick={() => setModalState(prev => ({ ...prev, s5s6SplitBatchOpen: false }))} className="text-slate-400 hover:text-white">
+                      <Icon name="x" className="w-5 h-5" />
+                    </button>
                   </div>
-                )}
 
-                <form onSubmit={(e) => {
-                  e.preventDefault();
-                  const form = e.target;
-                  const selMed = inventory.find(m => m.id === form.drugId.value);
-                  const selInmate = inmates.find(i => i.id === form.inmateId.value);
+                  <form onSubmit={(e) => {
+                    e.preventDefault();
+                    if (isSelfVerification) {
+                      addToast('error', 'Dual-Custody Violation', 'Initiator and Witness cannot be the same staff member.');
+                      return;
+                    }
+                    const form = e.target;
+                    const selInmate = inmates.find(i => i.id === form.inmateId.value);
 
-                  handleS5S6Submit({
-                    drugId: form.drugId.value,
-                    batchNumber: form.batchNumber.value,
-                    quantity: parseInt(form.quantity.value, 10),
-                    inmateId: form.inmateId.value,
-                    recipientName: selInmate ? `${selInmate.name} (${selInmate.cellBlock})` : 'Correctional Hospital Issue',
-                    doctor: form.doctor.value,
-                    txType: form.txType.value,
-                    witnessName: form.witnessName.value,
-                    notes: form.notes.value,
-                    pin: form.pin.value
-                  });
-                }} className="space-y-3 text-xs">
-                  
-                  {/* Controlled Drug Selection */}
-                  <div>
-                    <label className="text-slate-300 font-semibold block mb-1">Controlled Substance (S5 or S6):</label>
-                    <select
-                      name="drugId"
-                      id="s5s6-drug-select"
-                      required
-                      className="w-full bg-navy-950 border border-navy-700 rounded p-2 text-slate-100 font-semibold text-xs"
-                      onChange={(e) => {
-                        const sel = inventory.find(m => m.id === e.target.value);
-                        const batchSelect = document.getElementById('s5s6-batch-select');
-                        if (batchSelect && sel) {
-                          batchSelect.innerHTML = sel.batches.map(b => `<option value="${b.batchNumber}">${b.batchNumber} (Bal: ${b.quantity} un | Exp: ${b.expiryDate})</option>`).join('');
-                        }
-                      }}
-                    >
-                      {inventory
-                        .filter(i => i.schedule === 'S5' || i.schedule === 'S6')
-                        .map(i => (
+                    handleSplitBatchFefoSubmit({
+                      drugId: currentDrug.id,
+                      quantity: requestedQty,
+                      blindPhysicalCount: form.blindPhysicalCount.value,
+                      inmateId: form.inmateId.value,
+                      recipientName: selInmate ? `${selInmate.name} (${selInmate.cellBlock})` : 'Correctional Hospital Issue',
+                      doctor: form.doctor.value,
+                      initiator: session.currentUser,
+                      initiatorPin: form.initiatorPin.value,
+                      witnessId: currentWitness.id,
+                      witnessPin: form.witnessPin.value,
+                      notes: form.notes.value
+                    });
+                  }} className="space-y-3.5 text-xs">
+                    
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                      <div>
+                        <label className="text-slate-300 font-semibold block mb-1">Controlled Substance (S5/S6):</label>
+                        <select
+                          value={currentDrug?.id}
+                          onChange={(e) => setModalState(prev => ({ ...prev, s5s6SplitDrugId: e.target.value }))}
+                          required
+                          className="w-full bg-navy-950 border border-navy-700 rounded p-2 text-slate-100 font-semibold text-xs focus:border-amber-400"
+                        >
+                          {controlledMeds.map(i => (
+                            <option key={i.id} value={i.id}>
+                              [{i.schedule}] {i.name}
+                            </option>
+                          ))}
+                        </select>
+                      </div>
+
+                      <div>
+                        <label className="text-slate-300 font-semibold block mb-1">Total Requested Units to Span:</label>
+                        <input
+                          type="number"
+                          min="1"
+                          max="100"
+                          value={requestedQty}
+                          onChange={(e) => setModalState(prev => ({ ...prev, s5s6SplitQty: parseInt(e.target.value, 10) || 1 }))}
+                          required
+                          className="w-full bg-navy-950 border border-navy-700 rounded p-2 text-white font-bold"
+                        />
+                      </div>
+                    </div>
+
+                    {/* DYNAMIC FEFO ALLOCATION BREAKDOWN TABLE */}
+                    <div className="bg-navy-950 p-3 rounded-lg border border-amber-600/40 space-y-2">
+                      <div className="flex items-center justify-between text-xs font-bold text-amber-300">
+                        <span className="flex items-center gap-1.5">
+                          <Icon name="layers" className="w-3.5 h-3.5" />
+                          Dynamic FEFO Batch Span Breakdown:
+                        </span>
+                        <span className="text-[10px] font-mono text-slate-400">
+                          {splitAllocations.length} Batches Required
+                        </span>
+                      </div>
+
+                      <div className="space-y-1.5 font-mono text-[11px]">
+                        {splitAllocations.map((alloc, idx) => (
+                          <div key={alloc.batchNumber} className="flex items-center justify-between p-2 rounded bg-navy-900 border border-navy-800">
+                            <div>
+                              <span className="font-bold text-white">Leg #{idx + 1}: {alloc.batchNumber}</span>
+                              <span className="text-slate-400 block text-[10px]">Exp: {alloc.expiryDate} • Bin: {alloc.binLocation}</span>
+                            </div>
+                            <div className="text-right">
+                              <span className="text-amber-400 font-bold text-xs">{alloc.allocated} un Allocated</span>
+                              <span className="text-slate-500 block text-[10px]">(Depletes to {alloc.leavingQty} un)</span>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+
+                    {/* BLIND SAFE COUNT FOR PRIMARY BATCH */}
+                    <div className="bg-navy-950 p-3 rounded-lg border border-amber-500/50 space-y-1.5">
+                      <label className="text-slate-200 font-bold text-xs flex items-center gap-1.5">
+                        <Icon name="shield" className="w-4 h-4 text-amber-400" />
+                        Blind Physical Count of Oldest Batch ({splitAllocations[0]?.batchNumber || 'Primary'}):
+                      </label>
+                      <input
+                        name="blindPhysicalCount"
+                        type="number"
+                        min="0"
+                        required
+                        placeholder="Enter physical count of oldest batch remaining in safe..."
+                        className="w-full bg-navy-900 border border-amber-500/80 rounded p-2 text-white font-mono text-xs font-bold"
+                      />
+                    </div>
+
+                    {/* Recipient Inmate */}
+                    <div>
+                      <label className="text-slate-300 font-semibold block mb-1">Recipient Inmate:</label>
+                      <select name="inmateId" required className="w-full bg-navy-950 border border-navy-700 rounded p-2 text-slate-100 font-mono text-xs">
+                        {inmates.map(inmate => (
+                          <option key={inmate.id} value={inmate.id}>
+                            {inmate.id} — {inmate.name} ({inmate.cellBlock})
+                          </option>
+                        ))}
+                      </select>
+                    </div>
+
+                    <div className="grid grid-cols-2 gap-3">
+                      <div>
+                        <label className="text-slate-300 font-semibold block mb-1">Prescribing Doctor:</label>
+                        <input name="doctor" required defaultValue="Dr. R. Naidoo (MP 0554210)" className="w-full bg-navy-950 border border-navy-700 rounded p-2 text-slate-100" />
+                      </div>
+                      <div>
+                        <label className="text-slate-300 font-semibold block mb-1">Prescription Reference:</label>
+                        <input name="notes" required defaultValue="SAPC multi-batch FEFO draw for acute continuous analgesic coverage." className="w-full bg-navy-950 border border-navy-700 rounded p-2 text-slate-100" />
+                      </div>
+                    </div>
+
+                    {/* DUAL CUSTODY WITNESS SECTION */}
+                    <div className="bg-navy-950 p-3.5 rounded-lg border-2 border-amber-500/50 space-y-3">
+                      <div className="flex items-center justify-between border-b border-navy-800 pb-2">
+                        <span className="text-xs font-bold text-white uppercase tracking-wider flex items-center gap-1.5">
+                          <Icon name="users" className="w-4 h-4 text-amber-400" /> Dual-Control FEFO Authorization
+                        </span>
+                        <span className="text-[10px] font-mono text-amber-300">ACT 101 §22A</span>
+                      </div>
+
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-3 text-xs">
+                        <div className="bg-navy-900 p-2.5 rounded border border-navy-800 space-y-1">
+                          <span className="text-teal-400 font-bold block text-[10px] uppercase">Initiator: {session.currentUser.name}</span>
+                          <label className="text-[10px] text-slate-400 block">Initiator PIN ({session.currentUser.pin}):</label>
+                          <input name="initiatorPin" type="password" required placeholder={`PIN (${session.currentUser.pin})`} className="w-full bg-navy-950 border border-navy-700 rounded p-1.5 text-center font-mono text-xs text-white" />
+                        </div>
+                        <div className="bg-navy-900 p-2.5 rounded border border-navy-800 space-y-1">
+                          <span className="text-amber-400 font-bold block text-[10px] uppercase">Witness:</span>
+                          <select
+                            value={currentWitness?.id}
+                            onChange={(e) => setModalState(prev => ({ ...prev, s5s6SplitWitnessId: e.target.value }))}
+                            className="w-full bg-navy-950 border border-navy-700 rounded p-1 text-slate-100 text-xs font-semibold"
+                          >
+                            {staffList.map(s => (
+                              <option key={s.id} value={s.id} disabled={s.id === session.currentUser.id}>
+                                {s.name} ({s.roleLabel})
+                              </option>
+                            ))}
+                          </select>
+                          <input name="witnessPin" type="password" required placeholder={`Witness PIN (${currentWitness?.pin})`} className="w-full bg-navy-950 border border-navy-700 rounded p-1.5 text-center font-mono text-xs text-white" />
+                        </div>
+                      </div>
+                    </div>
+
+                    <div className="pt-3 border-t border-navy-800 flex justify-end gap-2">
+                      <button type="button" onClick={() => setModalState(prev => ({ ...prev, s5s6SplitBatchOpen: false }))} className="px-3 py-2 bg-navy-800 text-slate-300 rounded font-medium hover:bg-navy-700">
+                        Cancel
+                      </button>
+                      <button type="submit" disabled={isSelfVerification} className="px-4 py-2 bg-amber-700 hover:bg-amber-600 text-white font-bold rounded shadow-lg flex items-center gap-1.5">
+                        <Icon name="layers" className="w-4 h-4" />
+                        Execute Split-Batch FEFO Issue
+                      </button>
+                    </div>
+                  </form>
+                </div>
+              </div>
+            );
+          })()}
+
+          {/* ========================================================================= */}
+          {/* 3. LOG WASTAGE / BREAKAGE MODAL                                           */}
+          {/* ========================================================================= */}
+          {modalState.s5s6WastageOpen && (() => {
+            const controlledMeds = inventory.filter(i => i.schedule === 'S5' || i.schedule === 'S6');
+            const currentDrug = inventory.find(m => m.id === (modalState.s5s6WasteDrugId || controlledMeds[0]?.id)) || controlledMeds[0];
+            const defaultWitness = staffList.find(s => s.id !== session.currentUser.id) || staffList[0];
+            const currentWitness = staffList.find(s => s.id === (modalState.s5s6WasteWitnessId || defaultWitness?.id)) || defaultWitness;
+            const isSelfVerification = currentWitness?.id === session.currentUser.id;
+
+            return (
+              <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/85 backdrop-blur-sm">
+                <div className="bg-navy-900 border-2 border-red-700 rounded-lg max-w-lg w-full p-6 space-y-4 shadow-2xl max-h-[92vh] overflow-y-auto">
+                  <div className="flex items-center justify-between pb-3 border-b border-red-900/60">
+                    <div className="flex items-center space-x-2">
+                      <Icon name="trash" className="w-6 h-6 text-red-400" />
+                      <div>
+                        <h3 className="text-base font-bold text-white">Log Controlled Substance Wastage / Breakage</h3>
+                        <span className="text-[10px] text-red-300 font-mono">SAPC GPP 8.4 Clinical Waste Disposal Protocol</span>
+                      </div>
+                    </div>
+                    <button onClick={() => setModalState(prev => ({ ...prev, s5s6WastageOpen: false }))} className="text-slate-400 hover:text-white">
+                      <Icon name="x" className="w-5 h-5" />
+                    </button>
+                  </div>
+
+                  <form onSubmit={(e) => {
+                    e.preventDefault();
+                    if (isSelfVerification) {
+                      addToast('error', 'Dual-Custody Violation', 'Initiator and Witness cannot be the same staff member.');
+                      return;
+                    }
+                    const form = e.target;
+                    const reasonSel = form.reasonCode;
+                    const reasonLabel = reasonSel.options[reasonSel.selectedIndex].text;
+
+                    handleWastageSubmit({
+                      drugId: currentDrug.id,
+                      batchNumber: form.batchNumber.value,
+                      quantity: parseInt(form.quantity.value, 10),
+                      reasonCode: form.reasonCode.value,
+                      reasonLabel: reasonLabel,
+                      notes: form.notes.value,
+                      initiator: session.currentUser,
+                      initiatorPin: form.initiatorPin.value,
+                      witnessId: currentWitness.id,
+                      witnessPin: form.witnessPin.value
+                    });
+                  }} className="space-y-3.5 text-xs">
+
+                    <div>
+                      <label className="text-slate-300 font-semibold block mb-1">Damaged/Compromised Substance:</label>
+                      <select
+                        value={currentDrug?.id}
+                        onChange={(e) => setModalState(prev => ({ ...prev, s5s6WasteDrugId: e.target.value }))}
+                        required
+                        className="w-full bg-navy-950 border border-navy-700 rounded p-2 text-slate-100 font-semibold text-xs"
+                      >
+                        {controlledMeds.map(i => (
                           <option key={i.id} value={i.id}>
                             [{i.schedule}] {i.name}
                           </option>
                         ))}
-                    </select>
+                      </select>
+                    </div>
+
+                    <div className="grid grid-cols-2 gap-3">
+                      <div>
+                        <label className="text-slate-300 font-semibold block mb-1">Source Batch Number:</label>
+                        <select name="batchNumber" required className="w-full bg-navy-950 border border-navy-700 rounded p-2 text-slate-100 font-mono text-xs">
+                          {currentDrug?.batches.map(b => (
+                            <option key={b.batchNumber} value={b.batchNumber}>
+                              {b.batchNumber} ({b.binLocation})
+                            </option>
+                          ))}
+                        </select>
+                      </div>
+                      <div>
+                        <label className="text-slate-300 font-semibold block mb-1">Quantity Damaged / Wasted:</label>
+                        <input name="quantity" type="number" min="1" max="10" defaultValue="1" required className="w-full bg-navy-950 border border-navy-700 rounded p-2 text-white font-bold" />
+                      </div>
+                    </div>
+
+                    <div>
+                      <label className="text-slate-300 font-semibold block mb-1">Mandatory Statutory Reason Code:</label>
+                      <select name="reasonCode" required className="w-full bg-navy-950 border border-navy-700 rounded p-2 text-slate-100 text-xs">
+                        <option value="AMP_DROPPED_SHATTERED">Ampoule dropped / shattered on dispensary floor</option>
+                        <option value="CONTAMINATED_SYRINGE">Syringe needle coring / contaminated during preparation</option>
+                        <option value="EXPIRED_COLD_CHAIN">Cold-chain temperature excursion (&gt;8°C) safe compromise</option>
+                        <option value="PARTIAL_DOSE_RESIDUE">Unused residual volume post-administration (GPP 8.4)</option>
+                        <option value="DEFECTIVE_VIAL_PACKAGING">Rubber stopper fragmentation / defective tamper seal</option>
+                        <option value="SEDIMENT_PRECIPITATE">Particulate precipitation observed in ampoule solution</option>
+                      </select>
+                    </div>
+
+                    <div>
+                      <label className="text-slate-300 font-semibold block mb-1">Clinical Incident Incident Notes & Police / SAPC Ref:</label>
+                      <input name="notes" required defaultValue="Ampoule dropped during morning ward round preparation. Pieces collected in sharps container." className="w-full bg-navy-950 border border-navy-700 rounded p-2 text-slate-100" />
+                    </div>
+
+                    {/* DUAL CUSTODY WITNESS */}
+                    <div className="bg-navy-950 p-3.5 rounded-lg border-2 border-red-500/50 space-y-3">
+                      <div className="flex items-center justify-between border-b border-navy-800 pb-1.5">
+                        <span className="text-xs font-bold text-white uppercase tracking-wider flex items-center gap-1.5">
+                          <Icon name="users" className="w-4 h-4 text-red-400" /> Mandatory Witness Co-Signature
+                        </span>
+                        <span className="text-[10px] font-mono text-red-300">DESTRUCTION WITNESS</span>
+                      </div>
+                      <div className="grid grid-cols-2 gap-3 text-xs">
+                        <div className="bg-navy-900 p-2 rounded border border-navy-800">
+                          <span className="text-teal-400 block text-[10px] font-bold">INITIATOR: {session.currentUser.name}</span>
+                          <input name="initiatorPin" type="password" required placeholder={`PIN (${session.currentUser.pin})`} className="w-full bg-navy-950 border border-navy-700 rounded p-1 text-center font-mono text-xs text-white mt-1" />
+                        </div>
+                        <div className="bg-navy-900 p-2 rounded border border-navy-800">
+                          <span className="text-amber-400 block text-[10px] font-bold">WITNESS:</span>
+                          <select
+                            value={currentWitness?.id}
+                            onChange={(e) => setModalState(prev => ({ ...prev, s5s6WasteWitnessId: e.target.value }))}
+                            className="w-full bg-navy-950 border border-navy-700 rounded p-1 text-slate-100 text-[11px]"
+                          >
+                            {staffList.map(s => (
+                              <option key={s.id} value={s.id} disabled={s.id === session.currentUser.id}>
+                                {s.name}
+                              </option>
+                            ))}
+                          </select>
+                          <input name="witnessPin" type="password" required placeholder={`PIN (${currentWitness?.pin})`} className="w-full bg-navy-950 border border-navy-700 rounded p-1 text-center font-mono text-xs text-white mt-1" />
+                        </div>
+                      </div>
+                    </div>
+
+                    <div className="pt-3 border-t border-navy-800 flex justify-end gap-2">
+                      <button type="button" onClick={() => setModalState(prev => ({ ...prev, s5s6WastageOpen: false }))} className="px-3 py-2 bg-navy-800 text-slate-300 rounded font-medium hover:bg-navy-700">
+                        Cancel
+                      </button>
+                      <button type="submit" disabled={isSelfVerification} className="px-4 py-2 bg-crimson-700 hover:bg-crimson-600 text-white font-bold rounded shadow-lg flex items-center gap-1.5">
+                        <Icon name="trash" className="w-4 h-4" />
+                        Seal Wastage & Deduct Safe
+                      </button>
+                    </div>
+                  </form>
+                </div>
+              </div>
+            );
+          })()}
+
+          {/* ========================================================================= */}
+          {/* 4. INMATE REFUSAL / RETURN MODAL                                          */}
+          {/* ========================================================================= */}
+          {modalState.s5s6ReturnOpen && (() => {
+            const controlledMeds = inventory.filter(i => i.schedule === 'S5' || i.schedule === 'S6');
+            const currentDrug = inventory.find(m => m.id === (modalState.s5s6ReturnDrugId || controlledMeds[0]?.id)) || controlledMeds[0];
+            const defaultWitness = staffList.find(s => s.id !== session.currentUser.id) || staffList[0];
+            const currentWitness = staffList.find(s => s.id === (modalState.s5s6ReturnWitnessId || defaultWitness?.id)) || defaultWitness;
+            const isSelfVerification = currentWitness?.id === session.currentUser.id;
+
+            return (
+              <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/85 backdrop-blur-sm">
+                <div className="bg-navy-900 border-2 border-sky-600 rounded-lg max-w-lg w-full p-6 space-y-4 shadow-2xl max-h-[92vh] overflow-y-auto">
+                  <div className="flex items-center justify-between pb-3 border-b border-sky-900/60">
+                    <div className="flex items-center space-x-2">
+                      <Icon name="refresh" className="w-6 h-6 text-sky-400" />
+                      <div>
+                        <h3 className="text-base font-bold text-white">Log Inmate Refusal / Round Return</h3>
+                        <span className="text-[10px] text-sky-300 font-mono">Unadministered Controlled Dose Returned from Cell-Block Rounds</span>
+                      </div>
+                    </div>
+                    <button onClick={() => setModalState(prev => ({ ...prev, s5s6ReturnOpen: false }))} className="text-slate-400 hover:text-white">
+                      <Icon name="x" className="w-5 h-5" />
+                    </button>
                   </div>
 
-                  {/* Batch Selection with FEFO notice */}
-                  <div className="grid grid-cols-2 gap-3">
+                  <form onSubmit={(e) => {
+                    e.preventDefault();
+                    if (isSelfVerification) {
+                      addToast('error', 'Dual-Custody Violation', 'Initiator and Witness cannot be the same staff member.');
+                      return;
+                    }
+                    const form = e.target;
+                    const reasonSel = form.reasonCode;
+                    const reasonLabel = reasonSel.options[reasonSel.selectedIndex].text;
+
+                    handleInmateReturnSubmit({
+                      inmateId: form.inmateId.value,
+                      drugId: currentDrug.id,
+                      batchNumber: form.batchNumber.value,
+                      quantity: parseInt(form.quantity.value, 10),
+                      disposition: form.disposition.value,
+                      reasonCode: form.reasonCode.value,
+                      reasonLabel: reasonLabel,
+                      escortOfficer: form.escortOfficer.value,
+                      notes: form.notes.value,
+                      initiator: session.currentUser,
+                      initiatorPin: form.initiatorPin.value,
+                      witnessId: currentWitness.id,
+                      witnessPin: form.witnessPin.value
+                    });
+                  }} className="space-y-3.5 text-xs">
+
                     <div>
-                      <label className="text-slate-300 font-semibold block mb-1">Controlled Batch (FEFO):</label>
-                      <select name="batchNumber" id="s5s6-batch-select" required className="w-full bg-navy-950 border border-navy-700 rounded p-2 text-slate-100 font-mono text-xs">
-                        {inventory.find(i => i.schedule === 'S5' || i.schedule === 'S6')?.batches.map(b => (
-                          <option key={b.batchNumber} value={b.batchNumber}>
-                            {b.batchNumber} ({b.quantity} un)
+                      <label className="text-slate-300 font-semibold block mb-1">Inmate who Refused / Returned Dose:</label>
+                      <select name="inmateId" required className="w-full bg-navy-950 border border-navy-700 rounded p-2 text-slate-100 font-mono text-xs">
+                        {inmates.map(i => (
+                          <option key={i.id} value={i.id}>
+                            {i.id} — {i.name} ({i.cellBlock})
                           </option>
                         ))}
                       </select>
                     </div>
-                    <div>
-                      <label className="text-slate-300 font-semibold block mb-1">Issue Quantity:</label>
-                      <input name="quantity" type="number" min="1" max="50" defaultValue="1" required className="w-full bg-navy-950 border border-navy-700 rounded p-2 text-white font-bold" />
-                    </div>
-                  </div>
 
-                  {/* Recipient Inmate Selection */}
-                  <div>
-                    <label className="text-slate-300 font-semibold block mb-1">Recipient Inmate ID & Cell Block:</label>
-                    <select name="inmateId" required className="w-full bg-navy-950 border border-navy-700 rounded p-2 text-slate-100 font-mono text-xs">
-                      {inmates.map(inmate => (
-                        <option key={inmate.id} value={inmate.id}>
-                          {inmate.id} — {inmate.name} ({inmate.cellBlock})
-                        </option>
-                      ))}
-                    </select>
-                  </div>
-
-                  <div className="grid grid-cols-2 gap-3">
-                    <div>
-                      <label className="text-slate-300 font-semibold block mb-1">Prescribing Doctor (HPCSA MP):</label>
-                      <input name="doctor" required defaultValue="Dr. R. Naidoo (MP 0554210)" className="w-full bg-navy-950 border border-navy-700 rounded p-2 text-slate-100" />
+                    <div className="grid grid-cols-2 gap-3">
+                      <div>
+                        <label className="text-slate-300 font-semibold block mb-1">Returned Controlled Drug:</label>
+                        <select
+                          value={currentDrug?.id}
+                          onChange={(e) => setModalState(prev => ({ ...prev, s5s6ReturnDrugId: e.target.value }))}
+                          required
+                          className="w-full bg-navy-950 border border-navy-700 rounded p-2 text-slate-100 text-xs font-semibold"
+                        >
+                          {controlledMeds.map(i => (
+                            <option key={i.id} value={i.id}>
+                              [{i.schedule}] {i.name}
+                            </option>
+                          ))}
+                        </select>
+                      </div>
+                      <div>
+                        <label className="text-slate-300 font-semibold block mb-1">Originating Batch:</label>
+                        <select name="batchNumber" required className="w-full bg-navy-950 border border-navy-700 rounded p-2 text-slate-100 font-mono text-xs">
+                          {currentDrug?.batches.map(b => (
+                            <option key={b.batchNumber} value={b.batchNumber}>
+                              {b.batchNumber}
+                            </option>
+                          ))}
+                        </select>
+                      </div>
                     </div>
+
+                    <div className="grid grid-cols-2 gap-3">
+                      <div>
+                        <label className="text-slate-300 font-semibold block mb-1">Returned Dose Quantity:</label>
+                        <input name="quantity" type="number" min="1" max="5" defaultValue="1" required className="w-full bg-navy-950 border border-navy-700 rounded p-2 text-white font-bold" />
+                      </div>
+                      <div>
+                        <label className="text-slate-300 font-semibold block mb-1">Safe Vault Disposition:</label>
+                        <select name="disposition" className="w-full bg-navy-950 border border-navy-700 rounded p-2 text-slate-100 text-xs font-semibold">
+                          <option value="RETURN_TO_SAFE_INVENTORY">Restore to Safe Stock (Blister Intact)</option>
+                          <option value="QUARANTINE_FOR_DESTRUCTION">Quarantine for Destruction (Contaminated/Handled)</option>
+                        </select>
+                      </div>
+                    </div>
+
                     <div>
-                      <label className="text-slate-300 font-semibold block mb-1">Transaction Category:</label>
-                      <select name="txType" className="w-full bg-navy-950 border border-navy-700 rounded p-2 text-slate-100">
-                        <option value="DISPENSE">DISPENSE (Inmate Issue)</option>
-                        <option value="DESTRUCTION">DESTRUCTION / CLINICAL WASTE</option>
-                        <option value="STOCK_AUDIT">STOCK AUDIT CORRECTION</option>
+                      <label className="text-slate-300 font-semibold block mb-1">Refusal / Return Reason Code:</label>
+                      <select name="reasonCode" required className="w-full bg-navy-950 border border-navy-700 rounded p-2 text-slate-100 text-xs">
+                        <option value="INMATE_VERBAL_REFUSAL">Inmate explicitly refused dose at cell door</option>
+                        <option value="CELL_ISOLATION_CONFINEMENT">Inmate placed in solitary / segregation</option>
+                        <option value="MAGISTRATE_COURT_APPEARANCE">Inmate off-site for magistrate court hearing</option>
+                        <option value="EMERGENCY_TERTIARY_TRANSFER">Inmate transferred to external provincial hospital</option>
+                        <option value="SUSPECTED_CHEEKING_HOARDING">Nursing Sister suspected cheeking/hoarding behavior</option>
+                        <option value="ACUTE_ADVERSE_REACTION">Dose held due to acute clinical deterioration / low BP</option>
                       </select>
                     </div>
-                  </div>
 
-                  <div>
-                    <label className="text-slate-300 font-semibold block mb-1">Secondary Witness (Registered Nurse):</label>
-                    <input name="witnessName" required defaultValue="Sr. P. Dlamini, RN (SANC #10948)" className="w-full bg-navy-950 border border-navy-700 rounded p-2 text-slate-100" />
-                  </div>
-
-                  <div>
-                    <label className="text-slate-300 font-semibold block mb-1">Clinical Indication & Script Ref:</label>
-                    <input name="notes" placeholder="e.g. Post-surgical trauma breakthrough analgesia" required defaultValue="Acute clinical pain management under direct nursing sister supervision." className="w-full bg-navy-950 border border-navy-700 rounded p-2 text-slate-100" />
-                  </div>
-
-                  {/* MANDATORY 2FA PIN AUTHENTICATION */}
-                  <div className="bg-navy-950 p-3 rounded border border-red-500/50 space-y-1.5">
-                    <div className="flex items-center justify-between">
-                      <label className="text-red-300 font-bold flex items-center gap-1.5">
-                        <Icon name="key" className="w-4 h-4 text-red-400" />
-                        Pharmacist 2FA PIN Code (SAPC Sign-off):
-                      </label>
-                      <span className="text-[10px] text-slate-400 font-mono">Demo PIN: <strong>7492</strong></span>
+                    <div className="grid grid-cols-2 gap-3">
+                      <div>
+                        <label className="text-slate-300 font-semibold block mb-1">Escort Officer / Sister Name:</label>
+                        <input name="escortOfficer" defaultValue="Sr. P. Dlamini, RN / Off. Van Zyl" required className="w-full bg-navy-950 border border-navy-700 rounded p-2 text-slate-100" />
+                      </div>
+                      <div>
+                        <label className="text-slate-300 font-semibold block mb-1">Clinical Observation Notes:</label>
+                        <input name="notes" defaultValue="Inmate was argumentative and declined oral bedtime sedation." required className="w-full bg-navy-950 border border-navy-700 rounded p-2 text-slate-100" />
+                      </div>
                     </div>
-                    <input
-                      name="pin"
-                      type="password"
-                      maxLength="6"
-                      required
-                      placeholder="Enter 4-digit PIN (7492)"
-                      className="w-full bg-navy-900 border border-red-700 rounded p-2 text-center text-lg tracking-widest text-white font-mono focus:border-red-500"
-                    />
-                  </div>
 
-                  <div className="pt-3 border-t border-navy-800 flex justify-end gap-2">
-                    <button type="button" onClick={() => setModalState(prev => ({ ...prev, s5s6Open: false }))} className="px-3 py-2 bg-navy-800 text-slate-300 rounded font-medium hover:bg-navy-700">
-                      Cancel
-                    </button>
-                    <button type="submit" className="px-4 py-2 bg-crimson-700 hover:bg-crimson-600 text-white rounded font-bold shadow-lg">
-                      Cryptographically Seal & Issue
-                    </button>
-                  </div>
-                </form>
+                    {/* DUAL CUSTODY */}
+                    <div className="bg-navy-950 p-3 rounded-lg border-2 border-sky-500/50 space-y-2">
+                      <div className="flex items-center justify-between text-xs font-bold text-white">
+                        <span>Dual-Control Return Sign-off</span>
+                        <span className="text-[10px] text-sky-400 font-mono">ACT 101 §22A</span>
+                      </div>
+                      <div className="grid grid-cols-2 gap-3 text-xs">
+                        <div className="bg-navy-900 p-2 rounded border border-navy-800">
+                          <span className="text-teal-400 block text-[10px] font-bold">INITIATOR: {session.currentUser.name}</span>
+                          <input name="initiatorPin" type="password" required placeholder={`PIN (${session.currentUser.pin})`} className="w-full bg-navy-950 border border-navy-700 rounded p-1 text-center font-mono text-xs text-white mt-1" />
+                        </div>
+                        <div className="bg-navy-900 p-2 rounded border border-navy-800">
+                          <span className="text-amber-400 block text-[10px] font-bold">WITNESS:</span>
+                          <select
+                            value={currentWitness?.id}
+                            onChange={(e) => setModalState(prev => ({ ...prev, s5s6ReturnWitnessId: e.target.value }))}
+                            className="w-full bg-navy-950 border border-navy-700 rounded p-1 text-slate-100 text-[11px]"
+                          >
+                            {staffList.map(s => (
+                              <option key={s.id} value={s.id} disabled={s.id === session.currentUser.id}>
+                                {s.name}
+                              </option>
+                            ))}
+                          </select>
+                          <input name="witnessPin" type="password" required placeholder={`PIN (${currentWitness?.pin})`} className="w-full bg-navy-950 border border-navy-700 rounded p-1 text-center font-mono text-xs text-white mt-1" />
+                        </div>
+                      </div>
+                    </div>
+
+                    <div className="pt-3 border-t border-navy-800 flex justify-end gap-2">
+                      <button type="button" onClick={() => setModalState(prev => ({ ...prev, s5s6ReturnOpen: false }))} className="px-3 py-2 bg-navy-800 text-slate-300 rounded font-medium hover:bg-navy-700">
+                        Cancel
+                      </button>
+                      <button type="submit" disabled={isSelfVerification} className="px-4 py-2 bg-sky-700 hover:bg-sky-600 text-white font-bold rounded shadow-lg flex items-center gap-1.5">
+                        <Icon name="refresh" className="w-4 h-4" />
+                        Seal Return & Update Register
+                      </button>
+                    </div>
+                  </form>
+                </div>
               </div>
-            </div>
-          )}
+            );
+          })()}
 
-          {/* 3. FEFO PICK ASSISTANT MODAL */}
-          {modalState.fefoPickOpen && modalState.fefoItem && (
+          {/* ========================================================================= */}
+          {/* 5. SAFE COUNT AUDIT / VARIANCE CHECK MODAL                                */}
+          {/* ========================================================================= */}
+          {modalState.s5s6AuditOpen && (() => {
+            const controlledMeds = inventory.filter(i => i.schedule === 'S5' || i.schedule === 'S6');
+            const currentDrug = inventory.find(m => m.id === (modalState.s5s6AuditDrugId || controlledMeds[0]?.id)) || controlledMeds[0];
+            const defaultWitness = staffList.find(s => s.id !== session.currentUser.id) || staffList[0];
+            const currentWitness = staffList.find(s => s.id === (modalState.s5s6AuditWitnessId || defaultWitness?.id)) || defaultWitness;
+            const isSelfVerification = currentWitness?.id === session.currentUser.id;
+
+            return (
+              <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/85 backdrop-blur-sm">
+                <div className="bg-navy-900 border-2 border-slate-700 rounded-lg max-w-lg w-full p-6 space-y-4 shadow-2xl max-h-[92vh] overflow-y-auto">
+                  <div className="flex items-center justify-between pb-3 border-b border-navy-800">
+                    <div className="flex items-center space-x-2">
+                      <Icon name="shieldCheck" className="w-6 h-6 text-teal-400" />
+                      <div>
+                        <h3 className="text-base font-bold text-white">Vault Safe Count Audit & Verification</h3>
+                        <span className="text-[10px] text-teal-300 font-mono">Routine or Spot Audit under SAPC Act 101 Section 22A</span>
+                      </div>
+                    </div>
+                    <button onClick={() => setModalState(prev => ({ ...prev, s5s6AuditOpen: false }))} className="text-slate-400 hover:text-white">
+                      <Icon name="x" className="w-5 h-5" />
+                    </button>
+                  </div>
+
+                  <form onSubmit={(e) => {
+                    e.preventDefault();
+                    if (isSelfVerification) {
+                      addToast('error', 'Dual-Custody Violation', 'Initiator and Witness cannot be the same staff member.');
+                      return;
+                    }
+                    const form = e.target;
+                    handleSafeCountAuditSubmit({
+                      drugId: currentDrug.id,
+                      batchNumber: form.batchNumber.value,
+                      blindPhysicalCount: form.blindPhysicalCount.value,
+                      initiator: session.currentUser,
+                      initiatorPin: form.initiatorPin.value,
+                      witnessId: currentWitness.id,
+                      witnessPin: form.witnessPin.value
+                    });
+                  }} className="space-y-3.5 text-xs">
+
+                    <div>
+                      <label className="text-slate-300 font-semibold block mb-1">Controlled Substance:</label>
+                      <select
+                        value={currentDrug?.id}
+                        onChange={(e) => setModalState(prev => ({ ...prev, s5s6AuditDrugId: e.target.value }))}
+                        required
+                        className="w-full bg-navy-950 border border-navy-700 rounded p-2 text-slate-100 font-semibold text-xs"
+                      >
+                        {controlledMeds.map(i => (
+                          <option key={i.id} value={i.id}>
+                            [{i.schedule}] {i.name}
+                          </option>
+                        ))}
+                      </select>
+                    </div>
+
+                    <div>
+                      <label className="text-slate-300 font-semibold block mb-1">Batch to Audit:</label>
+                      <select name="batchNumber" required className="w-full bg-navy-950 border border-navy-700 rounded p-2 text-slate-100 font-mono text-xs">
+                        {currentDrug?.batches.map(b => (
+                          <option key={b.batchNumber} value={b.batchNumber}>
+                            {b.batchNumber} ({b.binLocation}) {b.discrepancyLocked ? ' [LOCKED]' : ''}
+                          </option>
+                        ))}
+                      </select>
+                    </div>
+
+                    <div className="bg-navy-950 p-3 rounded-lg border-2 border-amber-600/60 space-y-2">
+                      <label className="text-amber-300 font-bold block flex items-center gap-1.5">
+                        <Icon name="shield" className="w-4 h-4 text-amber-400" />
+                        Blind Physical Safe Count:
+                      </label>
+                      <p className="text-[11px] text-slate-400">
+                        Input actual physical count counted in the safe. If this matches our ledger, count is marked verified. If it differs, the batch is instantly locked with an official incident report.
+                      </p>
+                      <input
+                        name="blindPhysicalCount"
+                        type="number"
+                        min="0"
+                        required
+                        placeholder="Count physical units in vault..."
+                        className="w-full bg-navy-900 border border-amber-500 rounded p-2 text-white font-mono text-sm font-bold"
+                      />
+                    </div>
+
+                    {/* DUAL CUSTODY */}
+                    <div className="bg-navy-950 p-3 rounded-lg border border-navy-700 space-y-2">
+                      <span className="text-xs font-bold text-white block">Dual-Control Audit Sign-off</span>
+                      <div className="grid grid-cols-2 gap-3 text-xs">
+                        <div className="bg-navy-900 p-2 rounded border border-navy-800">
+                          <span className="text-teal-400 block text-[10px] font-bold">INITIATOR: {session.currentUser.name}</span>
+                          <input name="initiatorPin" type="password" required placeholder={`PIN (${session.currentUser.pin})`} className="w-full bg-navy-950 border border-navy-700 rounded p-1 text-center font-mono text-xs text-white mt-1" />
+                        </div>
+                        <div className="bg-navy-900 p-2 rounded border border-navy-800">
+                          <span className="text-amber-400 block text-[10px] font-bold">WITNESS:</span>
+                          <select
+                            value={currentWitness?.id}
+                            onChange={(e) => setModalState(prev => ({ ...prev, s5s6AuditWitnessId: e.target.value }))}
+                            className="w-full bg-navy-950 border border-navy-700 rounded p-1 text-slate-100 text-[11px]"
+                          >
+                            {staffList.map(s => (
+                              <option key={s.id} value={s.id} disabled={s.id === session.currentUser.id}>
+                                {s.name}
+                              </option>
+                            ))}
+                          </select>
+                          <input name="witnessPin" type="password" required placeholder={`PIN (${currentWitness?.pin})`} className="w-full bg-navy-950 border border-navy-700 rounded p-1 text-center font-mono text-xs text-white mt-1" />
+                        </div>
+                      </div>
+                    </div>
+
+                    <div className="pt-3 border-t border-navy-800 flex justify-end gap-2">
+                      <button type="button" onClick={() => setModalState(prev => ({ ...prev, s5s6AuditOpen: false }))} className="px-3 py-2 bg-navy-800 text-slate-300 rounded font-medium hover:bg-navy-700">
+                        Cancel
+                      </button>
+                      <button type="submit" disabled={isSelfVerification} className="px-4 py-2 bg-teal-600 hover:bg-teal-500 text-white font-bold rounded shadow-lg flex items-center gap-1.5">
+                        <Icon name="check" className="w-4 h-4" />
+                        Verify Safe Balance
+                      </button>
+                    </div>
+                  </form>
+                </div>
+              </div>
+            );
+          })()}
+
+          {/* ========================================================================= */}
+          {/* 6. PRINTABLE S5/S6 VARIANCE INCIDENT REPORT MODAL (OFFICIAL DOSSIER)       */}
+          {/* ========================================================================= */}
+          {modalState.s5s6VarianceReportOpen && activeVarianceIncident && (() => {
+            const inc = activeVarianceIncident;
+            const targetBatch = inventory.find(m => m.id === inc.drugId)?.batches.find(b => b.batchNumber === inc.batchNumber);
+            const isBatchCurrentlyLocked = targetBatch?.discrepancyLocked;
+            const defaultWitness = staffList.find(s => s.id !== session.currentUser.id) || staffList[0];
+            const currentWitness = staffList.find(s => s.id === (modalState.s5s6ResolveWitnessId || defaultWitness?.id)) || defaultWitness;
+            const isSelfVerification = currentWitness?.id === session.currentUser.id;
+
+            return (
+              <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/90 backdrop-blur-md overflow-y-auto">
+                <div className="bg-navy-950 border-2 border-red-600 rounded-lg max-w-4xl w-full p-6 space-y-5 shadow-2xl my-8">
+                  
+                  {/* Modal Action Bar (Hidden in Print) */}
+                  <div className="flex flex-wrap items-center justify-between pb-3 border-b border-navy-800 gap-3 no-print">
+                    <div className="flex items-center space-x-2">
+                      <span className="p-1.5 bg-red-950 border border-red-500 text-red-400 rounded-md animate-pulse">
+                        <Icon name="alertTriangle" className="w-5 h-5" />
+                      </span>
+                      <div>
+                        <h3 className="text-base font-bold text-white">SAPC S5/S6 Variance Incident Dossier</h3>
+                        <span className="text-xs text-red-400 font-mono">{inc.incidentId || inc.id} • Regulatory Lockdown</span>
+                      </div>
+                    </div>
+
+                    <div className="flex items-center gap-2">
+                      <button
+                        onClick={() => window.print()}
+                        className="px-4 py-2 bg-red-700 hover:bg-red-600 text-white font-bold text-xs rounded shadow flex items-center gap-1.5 transition"
+                      >
+                        <Icon name="printer" className="w-4 h-4" />
+                        Print Official Incident Report
+                      </button>
+                      <button
+                        onClick={() => setModalState(prev => ({ ...prev, s5s6VarianceReportOpen: false }))}
+                        className="px-3 py-2 bg-navy-800 hover:bg-navy-700 text-slate-300 font-medium text-xs rounded"
+                      >
+                        Close
+                      </button>
+                    </div>
+                  </div>
+
+                  {/* OFFICIAL PRINTABLE REPORT CONTAINER (TARGETED BY @media print #printable-area) */}
+                  <div id="printable-area" className="bg-white text-slate-900 p-8 rounded shadow font-sans space-y-6">
+                    
+                    {/* Header */}
+                    <div className="border-b-2 border-slate-900 pb-4 text-center space-y-1">
+                      <div className="font-extrabold text-sm tracking-widest uppercase text-slate-800">
+                        Department of Correctional Services • Republic of South Africa
+                      </div>
+                      <div className="text-lg font-black tracking-wide text-red-900 uppercase">
+                        Schedule 5 & 6 Controlled Substances Variance Incident Report
+                      </div>
+                      <div className="text-xs font-mono text-slate-600">
+                        Statutory Filing under Medicines and Related Substances Act 101 of 1965 §22A & SAPC GPP Rule 8.4
+                      </div>
+                    </div>
+
+                    {/* Metadata Strip */}
+                    <div className="grid grid-cols-2 md:grid-cols-4 gap-3 text-xs bg-slate-100 p-3 rounded border border-slate-300 font-mono">
+                      <div>
+                        <span className="text-slate-500 block text-[10px] uppercase font-sans">Incident Ref:</span>
+                        <strong className="text-red-700">{inc.incidentId || inc.id}</strong>
+                      </div>
+                      <div>
+                        <span className="text-slate-500 block text-[10px] uppercase font-sans">Facility / Safe:</span>
+                        <strong>{facility.name} ({inc.binLocation || 'VAULT-01'})</strong>
+                      </div>
+                      <div>
+                        <span className="text-slate-500 block text-[10px] uppercase font-sans">Timestamp:</span>
+                        <strong>{new Date(inc.timestamp).toLocaleString('en-ZA')}</strong>
+                      </div>
+                      <div>
+                        <span className="text-slate-500 block text-[10px] uppercase font-sans">Status:</span>
+                        <span className="px-2 py-0.5 bg-red-800 text-white rounded font-bold text-[10px]">DISCREPANCY_LOCKED</span>
+                      </div>
+                    </div>
+
+                    {/* Telemetry Discrepancy Table */}
+                    <div>
+                      <h4 className="text-xs font-bold uppercase tracking-wider text-slate-700 mb-2 border-b border-slate-300 pb-1">
+                        1. Physical Safe Count vs Immutable Ledger Balance Verification
+                      </h4>
+                      <table className="w-full text-left text-xs border border-slate-300 border-collapse">
+                        <thead className="bg-slate-200 text-slate-700">
+                          <tr>
+                            <th className="p-2 border border-slate-300">Controlled Substance</th>
+                            <th className="p-2 border border-slate-300">Batch Number</th>
+                            <th className="p-2 border border-slate-300 text-right">Expected Ledger Bal</th>
+                            <th className="p-2 border border-slate-300 text-right">Blind Safe Count</th>
+                            <th className="p-2 border border-slate-300 text-right">Variance Delta</th>
+                          </tr>
+                        </thead>
+                        <tbody className="font-mono">
+                          <tr>
+                            <td className="p-2 border border-slate-300 font-sans">
+                              <strong>[{inc.schedule}] {inc.drugName}</strong>
+                              <span className="block text-[10px] text-slate-500">Code: {inc.emlCode} • Safe Bin: {inc.binLocation}</span>
+                            </td>
+                            <td className="p-2 border border-slate-300 font-bold">{inc.batchNumber}</td>
+                            <td className="p-2 border border-slate-300 text-right font-bold">{inc.expectedBatchCount || inc.balance} un</td>
+                            <td className="p-2 border border-slate-300 text-right font-bold text-red-700">{inc.blindPhysicalCount} un</td>
+                            <td className="p-2 border border-slate-300 text-right font-black text-red-700 text-sm">
+                              {inc.varianceDelta > 0 ? `+${inc.varianceDelta}` : inc.varianceDelta} un
+                              <span className="block text-[9px] uppercase font-sans font-bold text-red-800">
+                                {inc.varianceDelta < 0 ? 'CRITICAL DEFICIT' : 'SURPLUS'}
+                              </span>
+                            </td>
+                          </tr>
+                        </tbody>
+                      </table>
+                    </div>
+
+                    {/* Dual-Control Authorizing Signatures */}
+                    <div>
+                      <h4 className="text-xs font-bold uppercase tracking-wider text-slate-700 mb-2 border-b border-slate-300 pb-1">
+                        2. Dual-Custody Investigating Cadres (SAPC GPP 8.4)
+                      </h4>
+                      <div className="grid grid-cols-2 gap-4 text-xs font-sans">
+                        <div className="border border-slate-300 p-3 rounded space-y-1">
+                          <span className="text-[10px] font-mono text-slate-500 block uppercase">Initiating Healthcare Clinician</span>
+                          <div className="font-bold text-slate-900">{inc.initiator?.name || inc.pharmacistName}</div>
+                          <div className="text-slate-600 text-[11px]">{inc.initiator?.roleLabel || 'Responsible Pharmacist'}</div>
+                          <div className="font-mono text-[11px] text-teal-800">License: {inc.initiator?.council || 'SAPC'} #{inc.initiator?.regNumber || '48912'}</div>
+                          <div className="text-[10px] text-slate-400 font-mono pt-1">Cryptographic Digital Pin-Sign Verified</div>
+                        </div>
+
+                        <div className="border border-slate-300 p-3 rounded space-y-1">
+                          <span className="text-[10px] font-mono text-slate-500 block uppercase">Mandatory Secondary Witness</span>
+                          <div className="font-bold text-slate-900">{inc.witness?.name || inc.witnessName}</div>
+                          <div className="text-slate-600 text-[11px]">{inc.witness?.roleLabel || 'Registered Nurse'}</div>
+                          <div className="font-mono text-[11px] text-amber-800">License: {inc.witness?.council || 'SANC'} #{inc.witness?.regNumber || '10948'}</div>
+                          <div className="text-[10px] text-slate-400 font-mono pt-1">Dual-Custody Countersign Authenticated</div>
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Statutory Regulatory Protocols */}
+                    <div className="bg-red-50 border border-red-300 p-3.5 rounded text-xs text-red-950 space-y-1.5">
+                      <strong className="block text-red-900 uppercase font-sans text-[11px]">
+                        Mandatory Statutory Directives (SAPC Rule 8.4 & Act 101 §22A):
+                      </strong>
+                      <ul className="list-disc list-inside space-y-0.5 text-[11px] text-slate-800">
+                        <li><strong>Safe Lockdown:</strong> Batch {inc.batchNumber} has been frozen under <span className="font-mono font-bold text-red-700">DISCREPANCY_LOCKED</span>. Further dispensing is legally halted.</li>
+                        <li><strong>24-Hour Regulatory Filing:</strong> Notification submitted to South African Pharmacy Council (SAPC) Registrar.</li>
+                        <li><strong>Correctional Security:</strong> DCS Area Commissioner and Internal Security Directorate alerted for perimeter CCTV review.</li>
+                        <li><strong>Police Referral:</strong> If unexplained within 48 hours, matter referred to South African Police Service (SAPS) for investigation.</li>
+                      </ul>
+                    </div>
+
+                    {/* Tamper-Evident Merkle Chain Footer */}
+                    <div className="pt-3 border-t border-slate-300 text-[10px] text-slate-500 font-mono flex justify-between items-center">
+                      <div>
+                        <span>Prev Block: {inc.prevHash ? inc.prevHash.substring(0, 20) : '00000000000000000000'}...</span>
+                        <span className="block">Sealed Hash: {inc.hash ? inc.hash.substring(0, 24) : 'SIMULATED-SHA256-HASH'}...</span>
+                      </div>
+                      <div className="text-right">
+                        <span>Boraine MedTrack (Correctional Edition)</span>
+                        <span className="block">Air-Gapped Merkle Compliance Engine</span>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Responsible Pharmacist Reconciliation Box (Only if batch is currently locked) */}
+                  {isBatchCurrentlyLocked && session.currentUser.role === 'RESPONSIBLE_PHARMACIST' && (
+                    <div className="bg-navy-900 border-2 border-teal-600 rounded-lg p-4 space-y-3 no-print">
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center space-x-2">
+                          <Icon name="unlock" className="w-5 h-5 text-teal-400" />
+                          <h4 className="text-xs font-bold text-white uppercase tracking-wider">
+                            Responsible Pharmacist Discrepancy Resolution & Recount
+                          </h4>
+                        </div>
+                        <span className="text-[10px] bg-teal-950 text-teal-300 border border-teal-700 px-2 py-0.5 rounded font-mono font-bold">
+                          RP OVERRIDE ONLY
+                        </span>
+                      </div>
+
+                      <p className="text-xs text-slate-300">
+                        As the Responsible Pharmacist, you may unlock batch <strong>{inc.batchNumber}</strong> once physical investigation and recount are complete. Dual-control witness sign-off is mandatory.
+                      </p>
+
+                      <form onSubmit={(e) => {
+                        e.preventDefault();
+                        if (isSelfVerification) {
+                          addToast('error', 'Dual-Custody Violation', 'Initiator and Witness cannot be the same staff member.');
+                          return;
+                        }
+                        const form = e.target;
+                        handleResolveDiscrepancy({
+                          drugId: inc.drugId,
+                          batchNumber: inc.batchNumber,
+                          reconciledPhysicalCount: form.reconciledCount.value,
+                          resolutionNotes: form.resolutionNotes.value,
+                          initiator: session.currentUser,
+                          initiatorPin: form.initiatorPin.value,
+                          witnessId: currentWitness.id,
+                          witnessPin: form.witnessPin.value
+                        });
+                      }} className="space-y-3 text-xs">
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                          <div>
+                            <label className="text-slate-300 block mb-1 font-semibold">Reconciled Final Physical Safe Count:</label>
+                            <input name="reconciledCount" type="number" min="0" required defaultValue={inc.blindPhysicalCount !== 'UNRECORDED' ? inc.blindPhysicalCount : 12} className="w-full bg-navy-950 border border-teal-500 rounded p-2 text-white font-mono font-bold" />
+                          </div>
+                          <div>
+                            <label className="text-slate-300 block mb-1 font-semibold">Official Resolution Investigation Notes:</label>
+                            <input name="resolutionNotes" required defaultValue="Vault safe recount completed with Ward Sister; physical units reconciled with register." className="w-full bg-navy-950 border border-navy-700 rounded p-2 text-slate-100" />
+                          </div>
+                        </div>
+
+                        <div className="grid grid-cols-2 gap-3">
+                          <div className="bg-navy-950 p-2 rounded border border-navy-800">
+                            <span className="text-teal-400 block text-[10px] font-bold">RP PIN ({session.currentUser.pin}):</span>
+                            <input name="initiatorPin" type="password" required placeholder="RP PIN (7492)" className="w-full bg-navy-900 border border-navy-700 rounded p-1 text-center font-mono text-white text-xs mt-1" />
+                          </div>
+                          <div className="bg-navy-950 p-2 rounded border border-navy-800">
+                            <span className="text-amber-400 block text-[10px] font-bold">Witness:</span>
+                            <select
+                              value={currentWitness?.id}
+                              onChange={(e) => setModalState(prev => ({ ...prev, s5s6ResolveWitnessId: e.target.value }))}
+                              className="w-full bg-navy-900 border border-navy-700 rounded p-1 text-slate-100 text-[11px]"
+                            >
+                              {staffList.map(s => (
+                                <option key={s.id} value={s.id} disabled={s.id === session.currentUser.id}>
+                                  {s.name}
+                                </option>
+                              ))}
+                            </select>
+                            <input name="witnessPin" type="password" required placeholder={`Witness PIN (${currentWitness?.pin})`} className="w-full bg-navy-900 border border-navy-700 rounded p-1 text-center font-mono text-white text-xs mt-1" />
+                          </div>
+                        </div>
+
+                        <div className="flex justify-end gap-2 pt-2 border-t border-navy-800">
+                          <button type="submit" disabled={isSelfVerification} className="px-4 py-2 bg-teal-600 hover:bg-teal-500 text-white font-bold rounded shadow flex items-center gap-1.5">
+                            <Icon name="unlock" className="w-4 h-4" />
+                            Seal Reconciliation & Unlock Batch
+                          </button>
+                        </div>
+                      </form>
+                    </div>
+                  )}
+
+                </div>
+              </div>
+            );
+          })()}
+{modalState.inmateDispenseOpen && modalState.dispensingInmate && (() => {
+  const inmate = modalState.dispensingInmate;
+  const regimen = Array.isArray(inmate.activeRegimen) ? inmate.activeRegimen : [];
+  const selectedRegimen = regimen.find(med => med.drugId === modalState.dispensingSelectedDrugId);
+  const selectedDrug = inventory.find(item => item.id === modalState.dispensingSelectedDrugId);
+  const availableBatches = getDispensableBatches(selectedDrug);
+  const selectedBatch = availableBatches.find(batch => batch.batchNumber === modalState.dispensingBatchNumber);
+  const hasAllergies = (inmate.allergies || []).some(allergy => !allergy.includes('NONE'));
+  const requiresControlledIssue = ['S5', 'S6'].includes(selectedDrug?.schedule);
+  const scheduleMismatch = ['S5', 'S6'].includes(selectedRegimen?.schedule) &&
+    selectedDrug && !requiresControlledIssue;
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/85 backdrop-blur-sm">
+      <div role="dialog" aria-modal="true" aria-labelledby="inmate-dispense-title" className="bg-navy-900 border border-teal-500/50 rounded-lg max-w-xl w-full p-6 space-y-4 shadow-2xl max-h-[92vh] overflow-y-auto">
+        <div className="flex items-center justify-between pb-3 border-b border-navy-800">
+          <div className="flex items-center gap-2">
+            <Icon name="pill" className="w-5 h-5 text-teal-400" />
+            <div>
+              <h3 id="inmate-dispense-title" className="text-base font-bold text-white">Dispense Inmate Medication</h3>
+              <span className="text-[10px] text-teal-300 font-mono">Verify the active regimen and available stock before issue</span>
+            </div>
+          </div>
+          <button
+            type="button"
+            aria-label="Close dispensing form"
+            onClick={() => setModalState(prev => ({
+              ...prev,
+              inmateDispenseOpen: false,
+              dispensingInmate: null,
+              dispensingSelectedDrugId: '',
+              dispensingBatchNumber: '',
+              dispensingQty: 1
+            }))}
+            className="text-slate-400 hover:text-white"
+          >
+            <Icon name="x" className="w-5 h-5" />
+          </button>
+        </div>
+
+        <div className="bg-navy-950 border border-navy-800 rounded p-3 text-xs">
+          <div className="font-bold text-white">{inmate.name}</div>
+          <div className="text-slate-400 font-mono">{inmate.id} • {inmate.cellBlock} ({inmate.cellNumber})</div>
+          <div className={`mt-2 ${hasAllergies ? 'text-red-300' : 'text-emerald-300'}`}>
+            {hasAllergies ? `Allergy alert: ${(inmate.allergies || []).filter(allergy => !allergy.includes('NONE')).join(', ')}` : 'No documented drug allergies (NKDA)'}
+          </div>
+        </div>
+
+        {regimen.length > 0 ? (
+          <form onSubmit={handleInmateDispenseSubmit} className="space-y-4 text-xs">
+            <div>
+              <label htmlFor="inmate-dispense-medicine" className="text-slate-300 font-semibold block mb-1">Active regimen medicine:</label>
+              <select
+                id="inmate-dispense-medicine"
+                value={modalState.dispensingSelectedDrugId}
+                onChange={event => {
+                  const nextDrug = inventory.find(item => item.id === event.target.value);
+                  const nextBatch = getDispensableBatches(nextDrug)[0];
+                  setModalState(prev => ({
+                    ...prev,
+                    dispensingSelectedDrugId: event.target.value,
+                    dispensingBatchNumber: nextBatch?.batchNumber || '',
+                    dispensingQty: 1
+                  }));
+                }}
+                required
+                className="w-full bg-navy-950 border border-navy-700 rounded p-2 text-slate-100"
+              >
+                {regimen.map((med, index) => {
+                  const inventoryItem = inventory.find(item => item.id === med.drugId);
+                  return (
+                    <option key={`${med.drugId}-${index}`} value={med.drugId}>
+                      {med.drugName || inventoryItem?.name || med.drugId}{inventoryItem ? ` — ${med.dose}` : ' — Not in inventory'}
+                    </option>
+                  );
+                })}
+              </select>
+            </div>
+
+            {selectedRegimen && (
+              <div className="bg-navy-950 border border-navy-800 rounded p-3 space-y-1">
+                <div className="font-semibold text-slate-100">{selectedDrug?.name || selectedRegimen.drugName}</div>
+                <div className="text-slate-400">Prescribed dose: {selectedRegimen.dose} • Schedule {selectedDrug?.schedule || selectedRegimen.schedule}</div>
+                <div className="text-slate-500">Prescriber: {inmate.doctor || 'Not recorded'}</div>
+              </div>
+            )}
+
+            {selectedDrug ? (
+              <>
+                <div>
+                  <label htmlFor="inmate-dispense-batch" className="text-slate-300 font-semibold block mb-1">Available batch (FEFO order):</label>
+                  <select
+                    id="inmate-dispense-batch"
+                    value={selectedBatch?.batchNumber || ''}
+                    onChange={event => setModalState(prev => ({ ...prev, dispensingBatchNumber: event.target.value }))}
+                    required
+                    disabled={availableBatches.length === 0}
+                    className="w-full bg-navy-950 border border-navy-700 rounded p-2 text-slate-100 font-mono"
+                  >
+                    {availableBatches.length === 0 ? (
+                      <option value="">No unexpired, available stock</option>
+                    ) : availableBatches.map((batch, index) => (
+                      <option key={batch.batchNumber} value={batch.batchNumber}>
+                        {index === 0 ? 'FEFO recommended — ' : ''}{batch.batchNumber} • {batch.quantity} units • Exp {batch.expiryDate} • {batch.binLocation}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+
+                <div>
+                  <label htmlFor="inmate-dispense-quantity" className="text-slate-300 font-semibold block mb-1">Quantity to issue (inventory units):</label>
+                  <input
+                    id="inmate-dispense-quantity"
+                    type="number"
+                    min="1"
+                    max={requiresControlledIssue
+                      ? Math.min(selectedBatch?.quantity || 0, 50)
+                      : selectedBatch?.quantity || undefined}
+                    value={modalState.dispensingQty}
+                    onChange={event => setModalState(prev => ({ ...prev, dispensingQty: event.target.value }))}
+                    required
+                    className="w-full bg-navy-950 border border-navy-700 rounded p-2 text-white font-bold"
+                  />
+                </div>
+              </>
+            ) : (
+              <div className="bg-amber-950/60 border border-amber-700 rounded p-3 text-amber-200">
+                This regimen medicine could not be found in inventory. No stock can be issued.
+              </div>
+            )}
+
+            {requiresControlledIssue && (
+              <div className="bg-red-950/70 border border-red-700 rounded p-3 text-red-200">
+                Schedule 5/6 medicines require the existing blind safe count and two-person authorization workflow before stock can be issued.
+              </div>
+            )}
+            {scheduleMismatch && (
+              <div className="bg-red-950/70 border border-red-700 rounded p-3 text-red-200">
+                The regimen and inventory schedules do not match. Correct the medicine record before dispensing.
+              </div>
+            )}
+
+            <div className="flex justify-end gap-2 pt-3 border-t border-navy-800">
+              <button
+                type="button"
+                onClick={() => setModalState(prev => ({
+                  ...prev,
+                  inmateDispenseOpen: false,
+                  dispensingInmate: null,
+                  dispensingSelectedDrugId: '',
+                  dispensingBatchNumber: '',
+                  dispensingQty: 1
+                }))}
+                className="px-3 py-2 bg-navy-800 hover:bg-navy-700 text-slate-300 rounded font-medium"
+              >
+                Cancel
+              </button>
+              <button
+                type="submit"
+                disabled={!selectedDrug || !selectedBatch || scheduleMismatch ||
+                  Number(modalState.dispensingQty) > (selectedBatch?.quantity || 0) ||
+                  (requiresControlledIssue && Number(modalState.dispensingQty) > 50)}
+                className="px-4 py-2 bg-teal-700 hover:bg-teal-600 disabled:bg-slate-700 disabled:cursor-not-allowed text-white rounded font-bold"
+              >
+                {requiresControlledIssue ? 'Continue to controlled issue' : 'Confirm dispense'}
+              </button>
+            </div>
+          </form>
+        ) : (
+          <div className="space-y-4 text-xs">
+            <div className="bg-amber-950/60 border border-amber-700 rounded p-3 text-amber-200">
+              This inmate has no active regimen medicines to dispense.
+            </div>
+            <div className="flex justify-end">
+              <button
+                type="button"
+                onClick={() => setModalState(prev => ({ ...prev, inmateDispenseOpen: false, dispensingInmate: null }))}
+                className="px-3 py-2 bg-navy-800 hover:bg-navy-700 text-slate-300 rounded font-medium"
+              >
+                Close
+              </button>
+            </div>
+          </div>
+        )}
+      </div>
+    </div>
+  );
+})()}
+
+{modalState.fefoPickOpen && modalState.fefoItem && (
             <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm">
               <div className="bg-navy-900 border border-teal-500/50 rounded-lg max-w-lg w-full p-6 space-y-4 shadow-2xl">
                 <div className="flex items-center justify-between pb-3 border-b border-navy-800">

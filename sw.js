@@ -1,5 +1,5 @@
 // Boraine MedTrack Air-Gapped Offline Service Worker
-const CACHE_NAME = 'boraine-medtrack-v5.3';
+const CACHE_NAME = 'boraine-medtrack-v5.5';
 const ASSETS = [
   './',
   './index.html',

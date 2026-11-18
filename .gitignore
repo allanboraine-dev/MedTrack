@@ -5,5 +5,6 @@ Thumbs.db
 *.log
 
 # Scratch and temporary scripts
+scratch/
 *.tmp
 *.bak

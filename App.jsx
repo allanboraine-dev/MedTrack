@@ -853,6 +853,7 @@ import React, { useState, useEffect, useReducer, useMemo, useRef } from 'react';
               chronicConditions: Array.isArray(i.chronic_conditions) ? i.chronic_conditions : [],
               allergies: Array.isArray(i.allergies) ? i.allergies : ['NONE KNOWN (NKDA)'],
               activeRegimen: Array.isArray(i.active_regimen) ? i.active_regimen : [],
+              lastVitals: i.last_vitals && typeof i.last_vitals === 'object' ? i.last_vitals : {},
               notes: 'Synced from Supabase PostgreSQL central database.'
             }));
             setInmates(mappedInmates);
@@ -2675,12 +2676,12 @@ import React, { useState, useEffect, useReducer, useMemo, useRef } from 'react';
                             <div className="pt-2 border-t border-navy-900 grid grid-cols-2 gap-2 text-[11px]">
                               <div>
                                 <span className="text-slate-500 block">BP / Vitals:</span>
-                                <span className="text-slate-200 font-mono font-medium">{inmate.lastVitals.bp}</span>
+                                <span className="text-slate-200 font-mono font-medium">{inmate.lastVitals?.bp || 'Not recorded'}</span>
                               </div>
                               <div>
                                 <span className="text-slate-500 block">Clinical Marker:</span>
                                 <span className="text-teal-400 font-mono font-medium">
-                                  {inmate.lastVitals.viralLoad || inmate.lastVitals.tbStatus || inmate.lastVitals.hba1c || 'Stable'}
+                                  {inmate.lastVitals?.viralLoad || inmate.lastVitals?.tbStatus || inmate.lastVitals?.hba1c || (inmate.lastVitals && Object.keys(inmate.lastVitals).length > 0 ? 'Stable' : 'Not recorded')}
                                 </span>
                               </div>
                             </div>

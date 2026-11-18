@@ -1,7 +1,7 @@
 # Boraine MedTrack (Correctional Edition)
 
 **Correctional Facility Pharmacy Management System**
-Version 5.0 — Offline-First PWA with Supabase PostgreSQL Cloud Backend & SAPC GPP Compliance
+Version 5.2 — Offline-First PWA with Supabase PostgreSQL Cloud Backend, Supplying Facilities Registry, and SAPC GPP Compliance
 
 ---
 
@@ -22,26 +22,13 @@ Boraine MedTrack is a high-security pharmacy management system designed for Sout
 - **Database Engine:** PostgreSQL 17
 - **Provisioned Tables:**
   - `facilities` (4 South African correctional centres)
+  - `suppliers` (9 Accredited provincial medical depots and commercial wholesalers)
   - `staff` (5 statutory personnel across SAPC/SANC cadres)
   - `medicines` (12 National EML pharmaceutical formulations)
   - `batches` (15 physical batch inventories with FEFO tracking)
   - `inmates` (5 offender medical records with chronic regimens & allergies)
   - `s5_s6_ledger` (Immutable cryptographic ledger with PostgreSQL trigger)
   - `dispensing_records` (Full audit trail of administrations)
-
-### Immutability Trigger
-```sql
-CREATE OR REPLACE FUNCTION enforce_s5_s6_immutability()
-RETURNS TRIGGER AS $$
-BEGIN
-  RAISE EXCEPTION 'SAPC / Act 101 Violation: Modifying or deleting records from the S5/S6 Register is strictly prohibited by law.';
-END;
-$$ LANGUAGE plpgsql;
-
-CREATE TRIGGER trg_s5_s6_no_mutation
-BEFORE UPDATE OR DELETE ON s5_s6_ledger
-FOR EACH ROW EXECUTE FUNCTION enforce_s5_s6_immutability();
-```
 
 ---
 
@@ -53,67 +40,60 @@ python -m http.server 3000
 # Open http://localhost:3000
 ```
 
-> **Default Responsible Pharmacist PIN:** `7492` (Dr. Themba Nkosi)
+> **Statutory Security Startup:** MedTrack **always starts at the Security Login Screen** requiring authentication.
+> **Default Responsible Pharmacist PIN:** `7492` (Dr. Themba Nkosi / Pharm. Liezel Venter)
 
 ---
 
 ## Features
 
-### ☁️ Module A: Supabase Cloud & Bi-Directional Sync
+### 🚚 Module A: Supplying Facilities & Wholesalers Registry (NEW in v5.2)
+- **Accredited Supply Chain:** Register and manage Provincial Medical Depots (Cape Medical Depot, Tshwane Depot, etc.) and Commercial Wholesalers (Aspen, Cipla, Adcock Ingram, Fresenius Kabi).
+- **Add Supplying Facility:** Easily register new supplying facilities with SAPC Wholesale License numbers, contact sisters, delivery lead times, and regional jurisdictions.
+- **Dynamic GRV Integration:** Automatically populates the supplier dropdown when logging incoming Goods Received Vouchers (GRV).
+
+### 📱 Module B: Full Responsive Mobile & Desktop Console
+- **Non-Clipping Desktop Layout:** Flexible vertical sizing and auto-truncation ensure zero word clipping across 1080p, 1440p, 4K, and ultrawide displays.
+- **Dedicated Mobile Operations Console:** On mobile/tablet screens, tap the **"Menu / Controls"** button to open a dedicated console with full access to Facility switching, Suppliers registry, Staff switching, Cloud sync, and System reset.
+
+### 🔐 Module C: Statutory Login & Terminal Security
+- **Startup Mandate:** Always starts at the security login screen on application load or page refresh.
+- **Cadre Selector:** Allows choosing between registered Responsible Pharmacists, Clinical Pharmacists, Post-Basic Assistants, and Ward Nurses.
+- **PIN Authentication:** 4-digit security PIN required to unlock.
+
+### ☁️ Module D: Supabase Cloud & Bi-Directional Sync
 - **Live Sync Pill:** Visual indicator in header (`SUPABASE CLOUD` / `AIR-GAP OFFLINE`).
 - **One-Click Re-Sync:** Click the status pill at any time to verify cloud connectivity and synchronize records.
 - **Air-Gap Resilience:** If the cloud is unreachable (loadshedding, air-gap subnet), the system seamlessly continues operating via local storage with zero UI interruption.
 
-### 🏠 Module B: Dashboard & KPI Overview
-- **4 KPI Cards:** Active Inmates, Low Stock Items, Expiring Batches (FEFO), Pending S5/S6 Verifications.
-- **Quick Action Bar:** New Ward Round, Log GRV Intake, Add S5/S6 Vault Issue, Export Depot Requisition.
-
-### 📦 Module C: FEFO Inventory & Batch Control
+### 📦 Module E: FEFO Inventory & Batch Control
 - Full inventory table with EML codes, schedule categories (S0–S6), stock levels.
 - **Expandable batch details:** supplier, manufacture date, expiry, bin location.
 - **FEFO Pick Assistant modal:** Auto-highlights earliest-expiry batch during dispensing.
-- **GRV Intake modal:** Log incoming goods with batch details.
+- **GRV Intake modal:** Log incoming goods linked to accredited suppliers.
 
-### 🔒 Module D: S5/S6 Controlled Substance Register
+### 🔒 Module F: S5/S6 Controlled Substance Register
 - **Cryptographic hash-chain audit trail** (SHA-256 immutable ledger).
 - Backed by PostgreSQL immutability trigger preventing `UPDATE` and `DELETE`.
 - **2FA PIN verification** required for every S5/S6 transaction.
 - Dual witness sign-off for Act 101 compliance.
 - **Role-based vault restriction:** Only RP and Clinical Pharmacists (L3+) can access.
 
-### 💊 Module E: Inmate Dispensing & Chronic Care
+### 💊 Module G: Inmate Dispensing & Chronic Care
 - **Inmate search** by ID or Cell Block.
 - **Clinical Allergy Contraindication Interlock:** Blocks dispensing when an adverse allergy is detected (e.g. Amoxicillin to Penicillin-allergic patients).
 - **Admit New Inmate modal** with full clinical intake.
 - **Nursing Ward MAR Sheet:** Monthly chronic repeat packages for cell block rounds with browser print preview.
 - **Transfer & Release Summary:** One-click `.txt` export of medication & clinical notes.
 
-### 📋 Module F: Provincial Depot Ordering
+### 📋 Module H: Provincial Depot Ordering
 - **Consumption forecasting:** Rolling 30-day usage analysis.
 - **Safety stock alerts:** Auto-flags items below buffer thresholds.
 - **Requisition Builder:** Editable order quantities mapped to National EML.
 - **CSV Download:** Real file download of depot order sheets.
 
-### 🔐 Module G: Pharmacist Login & Terminal Security
-- **Air-gapped security lockscreen** with PIN authentication.
-- **Session management** with active pharmacist display.
-- **Shift handover modal** for formal session transfers.
-
-### 👥 Module H: Staff Registry & Role-Based Access Control (RBAC)
-- **5 statutory cadres** per SAPC/SANC Act:
-  | Level | Role | S5/S6 Access | PIN |
-  |-------|------|-------------|-----|
-  | L4 | Responsible Pharmacist (RP) | ✅ Full | 7492 |
-  | L3 | Clinical Pharmacist | ✅ Full | 3156 |
-  | L2 | Post-Basic Pharmacist Assistant | ❌ Blocked | 2048 |
-  | L1 | Basic Pharmacist Assistant | ❌ Blocked | 6734 |
-  | L2 | Registered Nurse (SANC) | ❌ Blocked | 8521 |
-- **Register New Staff** with role assignment and auto-PIN generation.
-- **Switch User** functionality without full logout.
-
 ### 🏥 Module I: Multi-Facility Management
 - **4 pre-loaded facilities:** St. Albans, Kgosi Mampuru II, Kimberley, Pollsmoor.
-- **Switch active facility** from header dropdown.
 - **Commission New Facility:** Add new correctional centres to the network.
 - **Decommission & Delete:** Remove facilities with safety guard (can't delete last one).
 
@@ -129,7 +109,7 @@ python -m http.server 3000
 | Security | Row-Level Security (RLS) + PL/pgSQL Immutability Triggers |
 | Styling | Tailwind CSS 3.x |
 | State | React useState/useEffect + LocalStorage + Supabase Sync |
-| Offline | Service Worker (v5.0, Cache-First strategy) |
+| Offline | Service Worker (v5.2, Cache-First strategy) |
 | Cryptography | Web Crypto API SHA-256 for S5/S6 Merkle tree blocks |
 
 ---

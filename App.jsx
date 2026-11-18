@@ -1,7 +1,7 @@
 // ============================================================================
 // BORAINE MEDTRACK (CORRECTIONAL EDITION) — App.jsx
 // Correctional Facility Pharmacy Management System
-// Version 5.1 — Full Responsive Desktop Header & Startup Login Lockscreen
+// Version 5.2 — Supplying Facilities Registry, Responsive Mobile Console & Startup Login
 // ============================================================================
 
 import React, { useState, useEffect, useReducer, useMemo, useRef } from 'react';
@@ -43,6 +43,8 @@ import React, { useState, useEffect, useReducer, useMemo, useRef } from 'react';
     clock: <><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></>,
     database: <><ellipse cx="12" cy="5" rx="9" ry="3"/><path d="M21 12c0 1.66-4 3-9 3s-9-1.34-9-3"/><path d="M3 5v14c0 1.66 4 3 9 3s9-1.34 9-3V5"/></>,
     qrCode: <><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/></>,
+    menu: <><line x1="4" y1="12" x2="20" y2="12"/><line x1="4" y1="6" x2="20" y2="6"/><line x1="4" y1="18" x2="20" y2="18"/></>,
+    trash: <><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></>,
   };
 
       return (
@@ -95,6 +97,19 @@ import React, { useState, useEffect, useReducer, useMemo, useRef } from 'react';
       { id: 'KGM', name: 'Kgosi Mampuru II Central Correctional', province: 'Gauteng (Pretoria)', inmatesCount: 3850, security: 'Maximum & Remand', depot: 'Tshwane Provincial Depot' },
       { id: 'KBC', name: 'Kimberley Correctional Centre', province: 'Northern Cape (Kimberley)', inmatesCount: 1220, security: 'Medium', depot: 'Free State / NC Medical Depot' },
       { id: 'PLS', name: 'Pollsmoor Remand & Maximum', province: 'Western Cape (Tokai)', inmatesCount: 4110, security: 'Maximum & Remand', depot: 'Cape Medical Depot' }
+    ];
+
+    // Accredited Supplying Facilities & Wholesalers (SAPC GPP §4.1 Accredited Supply Chain)
+    const INITIAL_SUPPLIERS = [
+      { id: 'SUP-001', name: 'Cape Medical Depot (CMD)', type: 'PROVINCIAL_DEPOT', code: 'CPD-WC-01', license: 'SAPC-DEPOT-WC-01', province: 'Western Cape (Cape Town)', contact: 'Sr. A. Hendricks', phone: '+27 21 483 1111' },
+      { id: 'SUP-002', name: 'Tshwane Provincial Medical Depot', type: 'PROVINCIAL_DEPOT', code: 'TPD-GP-01', license: 'SAPC-DEPOT-GP-04', province: 'Gauteng (Pretoria)', contact: 'Pharm. M. Mokoena', phone: '+27 12 356 8000' },
+      { id: 'SUP-003', name: 'Port Elizabeth Regional Depot', type: 'PROVINCIAL_DEPOT', code: 'PERD-EC-02', license: 'SAPC-DEPOT-EC-12', province: 'Eastern Cape (Gqeberha)', contact: 'Sr. T. Plaatjies', phone: '+27 41 408 2200' },
+      { id: 'SUP-004', name: 'Free State & Northern Cape Regional Depot', type: 'PROVINCIAL_DEPOT', code: 'FNC-NC-01', license: 'SAPC-DEPOT-NC-08', province: 'Northern Cape (Kimberley)', contact: 'Pharm. J. Steenkamp', phone: '+27 53 831 4400' },
+      { id: 'SUP-005', name: 'Aspen Pharmacare (Pty) Ltd', type: 'COMMERCIAL_MANUFACTURER', code: 'ASPEN-SA', license: 'SAPC-WL-44912', province: 'Eastern Cape (Gqeberha)', contact: 'Mr. G. Davis', phone: '+27 41 407 2111' },
+      { id: 'SUP-006', name: 'Cipla Medpro South Africa', type: 'COMMERCIAL_MANUFACTURER', code: 'CIPLA-SA', license: 'SAPC-WL-88120', province: 'Western Cape (Bellville)', contact: 'Ms. F. Patel', phone: '+27 21 943 4200' },
+      { id: 'SUP-007', name: 'Adcock Ingram Critical Care', type: 'COMMERCIAL_MANUFACTURER', code: 'ADCOCK-SA', license: 'SAPC-WL-77402', province: 'Gauteng (Midrand)', contact: 'Dr. S. Naidoo', phone: '+27 11 635 0000' },
+      { id: 'SUP-008', name: 'Fresenius Kabi South Africa', type: 'COMMERCIAL_MANUFACTURER', code: 'FRES-SA', license: 'SAPC-WL-33019', province: 'Gauteng (Johannesburg)', contact: 'Pharm. C. Venter', phone: '+27 11 545 0000' },
+      { id: 'SUP-009', name: 'Sanofi-Aventis South Africa', type: 'COMMERCIAL_MANUFACTURER', code: 'SANOFI-SA', license: 'SAPC-WL-66104', province: 'Gauteng (Midrand)', contact: 'Mr. B. Khumalo', phone: '+27 11 256 3700' }
     ];
 
     const INITIAL_INVENTORY = [
@@ -708,6 +723,16 @@ import React, { useState, useEffect, useReducer, useMemo, useRef } from 'react';
         localStorage.setItem('boraine_facilities', JSON.stringify(facilitiesList));
       }, [facilitiesList]);
 
+      // Accredited Supplying Facilities & Wholesalers Registry
+      const [suppliersList, setSuppliersList] = useState(() => {
+        const saved = localStorage.getItem('boraine_suppliers');
+        return saved ? JSON.parse(saved) : INITIAL_SUPPLIERS;
+      });
+
+      useEffect(() => {
+        localStorage.setItem('boraine_suppliers', JSON.stringify(suppliersList));
+      }, [suppliersList]);
+
       // Active Facility Context
       const [facility, setFacility] = useState(() => {
         const saved = localStorage.getItem('boraine_facility');
@@ -858,6 +883,21 @@ import React, { useState, useEffect, useReducer, useMemo, useRef } from 'react';
             setControlledRegister(mappedLedger);
           }
 
+          // Fetch Accredited Suppliers & Depots
+          const { data: supData, error: supErr } = await supabaseClient.from('suppliers').select('*');
+          if (!supErr && supData && supData.length > 0) {
+            setSuppliersList(supData.map(s => ({
+              id: s.id,
+              name: s.name,
+              type: s.type,
+              code: s.code,
+              license: s.license_number,
+              province: s.province,
+              contact: s.contact_person,
+              phone: s.contact_phone
+            })));
+          }
+
           setCloudStatus('CONNECTED');
           setLastCloudSync(new Date());
           if (isManual) {
@@ -897,7 +937,10 @@ import React, { useState, useEffect, useReducer, useMemo, useRef } from 'react';
         inmateDispenseOpen: false,
         dispensingInmate: null,
         dispensingSelectedDrugId: '',
-        dispensingQty: 1
+        dispensingQty: 1,
+        supplierModalOpen: false,
+        supplierModalTab: 'list',
+        mobileMenuOpen: false
       });
 
       // Search & Filter State
@@ -1227,14 +1270,29 @@ import React, { useState, useEffect, useReducer, useMemo, useRef } from 'react';
                   </p>
                 </div>
 
-                <div className="bg-navy-950 p-3 rounded border border-navy-800 text-xs text-slate-300 space-y-1">
-                  <div className="flex justify-between">
-                    <span className="text-slate-500">Active Shift Pharmacist:</span>
-                    <span className="font-semibold text-slate-200">{session.currentUser.name}</span>
+                <div className="bg-navy-950 p-3 rounded border border-navy-800 text-xs text-slate-300 space-y-2 text-left">
+                  <div>
+                    <label className="text-[11px] text-slate-400 font-semibold block mb-1">
+                      Select Healthcare Cadre / Clinician:
+                    </label>
+                    <select
+                      value={session.currentUser.id}
+                      onChange={(e) => {
+                        const sel = staffList.find(s => s.id === e.target.value);
+                        if (sel) setSession(prev => ({ ...prev, currentUser: sel }));
+                      }}
+                      className="w-full bg-navy-900 border border-navy-700 rounded p-2 text-slate-100 text-xs font-semibold focus:outline-none focus:border-teal-400"
+                    >
+                      {staffList.map(s => (
+                        <option key={s.id} value={s.id}>
+                          {s.name} — {s.roleLabel}
+                        </option>
+                      ))}
+                    </select>
                   </div>
-                  <div className="flex justify-between">
-                    <span className="text-slate-500">SAPC Registration:</span>
-                    <span className="font-mono text-teal-400">{session.currentUser.regNumber}</span>
+                  <div className="flex justify-between text-[11px] border-t border-navy-800 pt-1.5">
+                    <span className="text-slate-400">Statutory License:</span>
+                    <span className="font-mono text-teal-400">{session.currentUser.council} #{session.currentUser.regNumber}</span>
                   </div>
                 </div>
 
@@ -1243,21 +1301,21 @@ import React, { useState, useEffect, useReducer, useMemo, useRef } from 'react';
                   const pin = e.target.lockPin.value;
                   if (pin === session.currentUser.pin) {
                     setSession(prev => ({ ...prev, isLocked: false }));
-                    addToast('success', 'Terminal Unlocked', `Welcome back, ${session.currentUser.name}.`);
+                    addToast('success', 'Terminal Unlocked', `Welcome, ${session.currentUser.name} (${session.currentUser.roleLabel}).`);
                   } else {
-                    addToast('error', 'Access Denied', 'Invalid Pharmacist Security PIN.');
+                    addToast('error', 'Authentication Failed', `Invalid Security PIN for ${session.currentUser.name}. Demo PIN is: ${session.currentUser.pin}`);
                   }
                 }} className="space-y-3">
                   <div>
                     <label className="text-[11px] text-slate-400 font-semibold block mb-1">
-                      Enter Pharmacist PIN Code (Demo PIN: 7492):
+                      Enter Security PIN Code (Assigned PIN: <strong className="text-teal-300 font-mono">{session.currentUser.pin}</strong>):
                     </label>
                     <input
                       name="lockPin"
                       type="password"
                       autoFocus
                       required
-                      placeholder="Enter 4-digit PIN (7492)"
+                      placeholder={`Enter 4-digit PIN (${session.currentUser.pin})`}
                       className="w-full bg-navy-950 border border-navy-700 rounded p-2.5 text-center text-lg font-mono tracking-widest text-white focus:outline-none focus:border-teal-400"
                     />
                   </div>
@@ -1285,39 +1343,41 @@ import React, { useState, useEffect, useReducer, useMemo, useRef } from 'react';
               </div>
             </div>
           )}
-                    {/* TOP AUDIT & AIR-GAP SYSTEM HEADER */}
-          <header className="bg-navy-900 border-b border-navy-800 sticky top-0 z-40 select-none shadow-md">
-            <div className="w-full px-4 sm:px-6 lg:px-8">
-              <div className="flex items-center justify-between h-16 gap-3">
+                              {/* TOP AUDIT & AIR-GAP SYSTEM HEADER (DESKTOP & MOBILE RESPONSIVE) */}
+          <header className="bg-navy-900 border-b border-navy-800 sticky top-0 z-40 select-none shadow-lg">
+            
+            {/* TIER 1: MAIN NAVIGATION BAR */}
+            <div className="w-full px-3 sm:px-6 lg:px-8 py-2 sm:py-2.5">
+              <div className="flex items-center justify-between gap-2 sm:gap-4">
                 
-                {/* 1. Left: Brand & Correctional Facility Context */}
-                <div className="flex items-center space-x-3 flex-shrink-0">
-                  <div className="w-9 h-9 sm:w-10 sm:h-10 rounded-lg bg-gradient-to-br from-teal-500 to-navy-700 flex items-center justify-center shadow-inner border border-teal-400/30 flex-shrink-0">
-                    <Icon name="shieldCheck" className="w-5 h-5 sm:w-6 sm:h-6 text-white" />
+                {/* Brand & Correctional Context */}
+                <div className="flex items-center gap-2.5 sm:gap-3 flex-shrink-0">
+                  <div className="w-9 h-9 sm:w-10 sm:h-10 rounded-lg bg-teal-800/50 border border-teal-400/50 flex items-center justify-center flex-shrink-0 text-teal-300 shadow-md">
+                    <Icon name="shieldCheck" className="w-5 h-5 sm:w-6 sm:h-6" />
                   </div>
-                  <div className="min-w-0">
-                    <div className="flex items-center space-x-2">
-                      <span className="font-extrabold tracking-wider text-white text-sm sm:text-base lg:text-lg whitespace-nowrap">
+                  <div className="flex flex-col justify-center">
+                    <div className="flex items-center gap-1.5 sm:gap-2">
+                      <span className="font-black tracking-wide text-white text-sm sm:text-base lg:text-lg leading-tight whitespace-nowrap">
                         BORAINE <span className="text-teal-400">MEDTRACK</span>
                       </span>
-                      <span className="hidden sm:inline-block bg-navy-800 text-teal-300 text-[10px] sm:text-xs px-2 py-0.5 rounded font-mono border border-teal-500/20 whitespace-nowrap">
+                      <span className="bg-navy-950 text-teal-300 text-[9px] sm:text-[10px] px-1.5 py-0.5 rounded font-mono border border-teal-500/30 whitespace-nowrap">
                         GPP v5.0
                       </span>
                     </div>
-                    <div className="flex items-center space-x-1.5 text-[11px] sm:text-xs text-slate-400">
-                      <span className="text-slate-300 font-medium truncate max-w-[140px] sm:max-w-[200px] md:max-w-[250px]" title={facility.name}>
+                    <div className="flex items-center gap-1.5 text-[10px] sm:text-xs text-slate-400 leading-tight mt-0.5">
+                      <span className="text-slate-200 font-semibold truncate max-w-[130px] sm:max-w-[200px] lg:max-w-[280px]" title={facility.name}>
                         {facility.name}
                       </span>
-                      <span className="text-slate-600 hidden md:inline">•</span>
-                      <span className="text-emerald-400 hidden md:flex items-center gap-1 font-medium whitespace-nowrap text-[10px] sm:text-[11px]">
+                      <span className="text-slate-600 hidden sm:inline">•</span>
+                      <span className="text-emerald-400 hidden sm:flex items-center gap-1 font-mono text-[10px] whitespace-nowrap">
                         <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse"></span>
-                        OFF-GRID PWA
+                        AIR-GAP OFF-GRID
                       </span>
                     </div>
                   </div>
                 </div>
 
-                {/* 2. Middle: Supabase Cloud Sync Status */}
+                {/* Center: Supabase Cloud Indicator (Medium+ Screens) */}
                 <div className="hidden lg:flex items-center flex-shrink-0">
                   <button
                     onClick={() => syncFromSupabaseCloud(true)}
@@ -1327,7 +1387,7 @@ import React, { useState, useEffect, useReducer, useMemo, useRef } from 'react';
                         ? 'bg-teal-950/80 border-teal-500/50 text-teal-300 hover:bg-teal-900/90'
                         : cloudStatus === 'SYNCING'
                         ? 'bg-blue-950/80 border-blue-500/50 text-blue-300'
-                        : 'bg-navy-900 border-navy-700 text-slate-400 hover:text-slate-200'
+                        : 'bg-navy-950 border-navy-700 text-slate-400 hover:text-slate-200'
                     }`}
                   >
                     <span className={`w-2 h-2 rounded-full flex-shrink-0 ${
@@ -1337,190 +1397,338 @@ import React, { useState, useEffect, useReducer, useMemo, useRef } from 'react';
                     }`}></span>
                     <span className="font-bold">
                       {cloudStatus === 'CONNECTED' ? 'SUPABASE CLOUD' :
-                       cloudStatus === 'SYNCING' ? 'SYNCING...' : 'AIR-GAP LOCAL'}
+                       cloudStatus === 'SYNCING' ? 'SYNCING...' : 'AIR-GAP OFFLINE'}
                     </span>
                     <Icon name="refreshCw" className={`w-3 h-3 ml-0.5 flex-shrink-0 ${isSyncingCloud ? 'animate-spin text-teal-300' : 'text-slate-400'}`} />
                   </button>
                 </div>
 
-                {/* 3. Right: Facility Dropdown, Staff Session & Utility Controls */}
-                <div className="flex items-center space-x-2 sm:space-x-2.5 flex-shrink-0">
+                {/* Desktop Utility Group (Large Screens: >= 1024px) */}
+                <div className="hidden lg:flex items-center space-x-2 flex-shrink-0">
                   
-                  {/* Facility Selector */}
-                  <div className="flex items-center space-x-1">
-                    <div className="flex items-center bg-navy-950/80 px-2 sm:px-2.5 py-1.5 rounded-md border border-navy-800 text-xs text-slate-300">
-                      <Icon name="building" className="w-3.5 h-3.5 mr-1 text-teal-400 flex-shrink-0" />
-                      <select
-                        value={facility.id}
-                        onChange={(e) => {
-                          if (e.target.value === '__MANAGE__') {
-                            setModalState(prev => ({ ...prev, facilityModalOpen: true, facilityModalTab: 'list' }));
-                            return;
-                          }
-                          const sel = facilitiesList.find(f => f.id === e.target.value);
-                          if (sel) {
-                            setFacility(sel);
-                            addToast('info', 'Facility Context Switched', `Active inventory set to ${sel.name}.`);
-                          }
-                        }}
-                        className="bg-transparent border-none text-slate-200 focus:outline-none cursor-pointer pr-1 font-medium text-xs max-w-[120px] sm:max-w-[170px] md:max-w-[210px] truncate"
-                      >
-                        {facilitiesList.map(f => (
-                          <option key={f.id} value={f.id} className="bg-navy-900 text-slate-100">
-                            {f.name}
-                          </option>
-                        ))}
-                        <option value="__MANAGE__" className="bg-navy-950 text-teal-300 font-bold">
-                          + Manage Facilities...
-                        </option>
-                      </select>
-                    </div>
-
-                    <button
-                      onClick={() => setModalState(prev => ({ ...prev, facilityModalOpen: true, facilityModalTab: 'list' }))}
-                      title="Add or Delete Correctional Facilities"
-                      className="px-2 py-1.5 bg-navy-950 hover:bg-navy-850 text-teal-300 hover:text-white border border-navy-800 rounded-md text-xs font-semibold flex items-center gap-1 transition flex-shrink-0"
+                  {/* Facility Context Selector */}
+                  <div className="flex items-center bg-navy-950 px-2 py-1.5 rounded-md border border-navy-800 text-xs text-slate-300">
+                    <Icon name="building" className="w-3.5 h-3.5 mr-1.5 text-teal-400 flex-shrink-0" />
+                    <select
+                      value={facility.id}
+                      onChange={(e) => {
+                        if (e.target.value === '__MANAGE__') {
+                          setModalState(prev => ({ ...prev, facilityModalOpen: true, facilityModalTab: 'list' }));
+                          return;
+                        }
+                        const sel = facilitiesList.find(f => f.id === e.target.value);
+                        if (sel) {
+                          setFacility(sel);
+                          addToast('info', 'Facility Context Switched', `Active inventory set to ${sel.name}.`);
+                        }
+                      }}
+                      className="bg-transparent border-none text-slate-200 focus:outline-none cursor-pointer pr-1 font-medium text-xs max-w-[150px] xl:max-w-[190px] truncate"
                     >
-                      <Icon name="building" className="w-3.5 h-3.5 text-teal-400" />
-                      <span className="hidden sm:inline">Manage</span>
-                    </button>
+                      {facilitiesList.map(f => (
+                        <option key={f.id} value={f.id} className="bg-navy-900 text-slate-100">
+                          {f.name}
+                        </option>
+                      ))}
+                      <option value="__MANAGE__" className="bg-navy-950 text-teal-300 font-bold">
+                        + Manage Facilities...
+                      </option>
+                    </select>
                   </div>
 
-                  {/* Pharmacist & Assistant Session Badge */}
-                  <div className="flex items-center space-x-1.5">
-                    <button
-                      onClick={() => setModalState(prev => ({ ...prev, loginModalOpen: true, staffModalTab: 'list' }))}
-                      title="Staff Registry & Role Access Control"
-                      className="flex items-center bg-navy-850 hover:bg-navy-800 px-2.5 py-1.5 rounded-md border border-teal-500/40 text-xs transition cursor-pointer text-left shadow-sm flex-shrink-0"
-                    >
-                      <Icon name="user" className="w-3.5 h-3.5 mr-1.5 text-teal-400 flex-shrink-0" />
-                      <div className="leading-tight">
-                        <div className="flex items-center space-x-1.5">
-                          <span className="font-bold text-slate-100 max-w-[110px] sm:max-w-[140px] truncate">
-                            {session.currentUser.name}
-                          </span>
-                          <span className={`text-[9px] px-1.5 py-0.2 rounded font-extrabold uppercase whitespace-nowrap ${
-                            session.currentUser.role === 'RESPONSIBLE_PHARMACIST' ? 'bg-emerald-950 text-emerald-300 border border-emerald-600' :
-                            session.currentUser.role === 'CLINICAL_PHARMACIST' ? 'bg-teal-950 text-teal-300 border border-teal-600' :
-                            session.currentUser.role === 'ASSISTANT_POST_BASIC' ? 'bg-amber-950 text-amber-300 border border-amber-600' :
-                            session.currentUser.role === 'ASSISTANT_BASIC' ? 'bg-slate-800 text-slate-300' :
-                            'bg-blue-950 text-blue-300 border border-blue-600'
-                          }`}>
-                            {session.currentUser.role === 'RESPONSIBLE_PHARMACIST' ? 'RP • L4' :
-                             session.currentUser.role === 'CLINICAL_PHARMACIST' ? 'PHARM • L3' :
-                             session.currentUser.role === 'ASSISTANT_POST_BASIC' ? 'ASST • L2' :
-                             session.currentUser.role === 'ASSISTANT_BASIC' ? 'ASST • L1' : 'NURSE • SANC'}
-                          </span>
-                        </div>
-                        <div className="flex items-center space-x-1.5 text-[10px] whitespace-nowrap mt-0.5">
-                          <span className="text-teal-400 font-mono">{session.currentUser.council} #{session.currentUser.regNumber}</span>
-                          <span className="text-slate-500 hidden sm:inline">•</span>
-                          <span className="text-teal-300 underline font-medium hidden sm:inline">Switch</span>
-                        </div>
-                      </div>
-                    </button>
+                  {/* Facility Manage Button */}
+                  <button
+                    onClick={() => setModalState(prev => ({ ...prev, facilityModalOpen: true, facilityModalTab: 'list' }))}
+                    title="Add or Delete Correctional Facilities"
+                    className="px-2 py-1.5 bg-navy-950 hover:bg-navy-850 text-teal-300 hover:text-white border border-navy-800 rounded-md text-xs font-semibold flex items-center gap-1 transition flex-shrink-0"
+                  >
+                    <Icon name="building" className="w-3.5 h-3.5 text-teal-400" />
+                    <span>Facilities</span>
+                  </button>
 
-                    {/* Lock Terminal Button */}
+                  {/* SUPPLIERS & DEPOTS REGISTRY BUTTON */}
+                  <button
+                    onClick={() => setModalState(prev => ({ ...prev, supplierModalOpen: true, supplierModalTab: 'list' }))}
+                    title="Accredited Supplying Facilities & Wholesalers Registry (SAPC GPP §4.1)"
+                    className="px-2.5 py-1.5 bg-navy-950 hover:bg-navy-850 text-teal-300 hover:text-white border border-navy-800 hover:border-teal-500/40 rounded-md text-xs font-semibold flex items-center gap-1.5 transition flex-shrink-0 shadow-sm"
+                  >
+                    <Icon name="truck" className="w-3.5 h-3.5 text-teal-400" />
+                    <span>Suppliers ({suppliersList.length})</span>
+                  </button>
+
+                  {/* Staff User Badge */}
+                  <button
+                    onClick={() => setModalState(prev => ({ ...prev, loginModalOpen: true, staffModalTab: 'list' }))}
+                    title="Staff Registry & Role Access Control"
+                    className="flex items-center bg-navy-850 hover:bg-navy-800 px-2.5 py-1.5 rounded-md border border-teal-500/40 text-xs transition cursor-pointer text-left shadow-sm flex-shrink-0"
+                  >
+                    <Icon name="user" className="w-3.5 h-3.5 mr-1.5 text-teal-400 flex-shrink-0" />
+                    <div className="leading-tight">
+                      <div className="flex items-center space-x-1.5">
+                        <span className="font-bold text-slate-100 max-w-[110px] xl:max-w-[140px] truncate">
+                          {session.currentUser.name}
+                        </span>
+                        <span className={`text-[9px] px-1.5 py-0.2 rounded font-extrabold uppercase whitespace-nowrap ${
+                          session.currentUser.role === 'RESPONSIBLE_PHARMACIST' ? 'bg-emerald-950 text-emerald-300 border border-emerald-600' :
+                          session.currentUser.role === 'CLINICAL_PHARMACIST' ? 'bg-teal-950 text-teal-300 border border-teal-600' :
+                          session.currentUser.role === 'ASSISTANT_POST_BASIC' ? 'bg-amber-950 text-amber-300 border border-amber-600' :
+                          session.currentUser.role === 'ASSISTANT_BASIC' ? 'bg-slate-800 text-slate-300' :
+                          'bg-blue-950 text-blue-300 border border-blue-600'
+                        }`}>
+                          {session.currentUser.role === 'RESPONSIBLE_PHARMACIST' ? 'RP • L4' :
+                           session.currentUser.role === 'CLINICAL_PHARMACIST' ? 'PHARM • L3' :
+                           session.currentUser.role === 'ASSISTANT_POST_BASIC' ? 'ASST • L2' :
+                           session.currentUser.role === 'ASSISTANT_BASIC' ? 'ASST • L1' : 'NURSE • SANC'}
+                        </span>
+                      </div>
+                      <div className="flex items-center space-x-1 text-[10px] whitespace-nowrap mt-0.5">
+                        <span className="text-teal-400 font-mono">{session.currentUser.council} #{session.currentUser.regNumber}</span>
+                        <span className="text-slate-500">•</span>
+                        <span className="text-teal-300 underline font-medium">Switch</span>
+                      </div>
+                    </div>
+                  </button>
+
+                  {/* Lock Terminal Button */}
+                  <button
+                    onClick={() => {
+                      setSession(prev => ({ ...prev, isLocked: true }));
+                      addToast('info', 'Terminal Locked', 'Dispensary terminal locked under SAPC GPP vault protocols.');
+                    }}
+                    title="Lock Air-Gap Terminal (SAPC Security Protocol)"
+                    className="p-2 text-slate-400 hover:text-red-300 bg-navy-950 hover:bg-navy-850 border border-navy-800 rounded-md transition flex-shrink-0"
+                  >
+                    <Icon name="lock" className="w-4 h-4" />
+                  </button>
+
+                  {/* Reset Baseline Data Button */}
+                  <button
+                    onClick={handleResetDemoData}
+                    title="Reset to SAPC baseline mock data"
+                    className="p-2 text-slate-400 hover:text-white bg-navy-950 hover:bg-navy-850 border border-navy-800 rounded-md transition flex-shrink-0"
+                  >
+                    <Icon name="refresh" className="w-4 h-4" />
+                  </button>
+                </div>
+
+                {/* Mobile / Tablet Quick Controls Bar (< 1024px) */}
+                <div className="flex lg:hidden items-center gap-1.5 flex-shrink-0">
+                  
+                  {/* Quick Lock Button */}
+                  <button
+                    onClick={() => {
+                      setSession(prev => ({ ...prev, isLocked: true }));
+                      addToast('info', 'Terminal Locked', 'Dispensary terminal locked.');
+                    }}
+                    title="Lock Terminal"
+                    className="p-1.5 text-slate-300 hover:text-red-300 bg-navy-950 border border-navy-800 rounded-md transition"
+                  >
+                    <Icon name="lock" className="w-4 h-4" />
+                  </button>
+
+                  {/* Mobile Controls Toggle Button */}
+                  <button
+                    onClick={() => setModalState(prev => ({ ...prev, mobileMenuOpen: !prev.mobileMenuOpen }))}
+                    className={`px-2.5 py-1.5 rounded-md text-xs font-bold flex items-center gap-1.5 transition shadow ${
+                      modalState.mobileMenuOpen
+                        ? 'bg-teal-600 text-white border border-teal-400'
+                        : 'bg-navy-950 hover:bg-navy-800 text-teal-300 border border-teal-500/40'
+                    }`}
+                  >
+                    <Icon name={modalState.mobileMenuOpen ? "x" : "menu"} className="w-4 h-4" />
+                    <span>{modalState.mobileMenuOpen ? "Close" : "Menu"}</span>
+                  </button>
+                </div>
+
+              </div>
+            </div>
+
+            {/* TIER 2: MOBILE EXPANDABLE CONTROL CONSOLE (Visible when toggled on Mobile) */}
+            {modalState.mobileMenuOpen && (
+              <div className="lg:hidden bg-navy-950 border-t border-navy-800 px-4 py-3 space-y-3 animate-fade-in shadow-2xl">
+                
+                {/* 1. Facility Switcher & Manage */}
+                <div className="bg-navy-900 p-2.5 rounded-lg border border-navy-800 space-y-1.5">
+                  <div className="flex justify-between items-center text-[11px] font-semibold text-slate-300">
+                    <span className="flex items-center gap-1 text-teal-400">
+                      <Icon name="building" className="w-3.5 h-3.5" />
+                      Correctional Facility Context:
+                    </span>
                     <button
                       onClick={() => {
-                        setSession(prev => ({ ...prev, isLocked: true }));
-                        addToast('info', 'Terminal Locked', 'Dispensary terminal locked under SAPC GPP vault protocols.');
+                        setModalState(prev => ({ ...prev, facilityModalOpen: true, facilityModalTab: 'list', mobileMenuOpen: false }));
                       }}
-                      title="Lock Air-Gap Terminal (SAPC Security Protocol)"
-                      className="p-2 text-slate-400 hover:text-red-300 bg-navy-850 hover:bg-navy-800 border border-navy-700 rounded-md transition flex-shrink-0"
+                      className="text-teal-300 underline font-bold"
                     >
-                      <Icon name="lock" className="w-4 h-4" />
-                    </button>
-
-                    {/* Reset Baseline Data Button */}
-                    <button
-                      onClick={handleResetDemoData}
-                      title="Reset to SAPC baseline mock data"
-                      className="p-2 text-slate-400 hover:text-white bg-navy-850 hover:bg-navy-800 border border-navy-700 rounded-md transition flex-shrink-0"
-                    >
-                      <Icon name="refresh" className="w-4 h-4" />
+                      + Manage / Add
                     </button>
                   </div>
-
+                  <select
+                    value={facility.id}
+                    onChange={(e) => {
+                      const sel = facilitiesList.find(f => f.id === e.target.value);
+                      if (sel) {
+                        setFacility(sel);
+                        addToast('info', 'Facility Context Switched', `Active inventory set to ${sel.name}.`);
+                      }
+                    }}
+                    className="w-full bg-navy-950 border border-navy-700 rounded p-2 text-slate-100 text-xs font-medium"
+                  >
+                    {facilitiesList.map(f => (
+                      <option key={f.id} value={f.id}>
+                        {f.name} ({f.inmatesCount} Inmates)
+                      </option>
+                    ))}
+                  </select>
                 </div>
-              </div>
 
-              {/* Navigation Tabs */}
-              <nav className="flex space-x-1 border-t border-navy-850 py-1.5 overflow-x-auto text-xs sm:text-sm font-medium">
-                <button
-                  onClick={() => setActiveTab('dashboard')}
-                  className={`flex items-center px-3 py-2 rounded-md transition whitespace-nowrap ${
-                    activeTab === 'dashboard'
-                      ? 'bg-teal-700 text-white font-semibold shadow-sm'
-                      : 'text-slate-400 hover:text-slate-200 hover:bg-navy-850'
-                  }`}
-                >
-                  <Icon name="layers" className="w-4 h-4 mr-2" />
-                  Command Dashboard
-                </button>
+                {/* 2. Suppliers & Depots Registry Button (Mobile) */}
+                <div className="grid grid-cols-2 gap-2">
+                  <button
+                    onClick={() => {
+                      setModalState(prev => ({ ...prev, supplierModalOpen: true, supplierModalTab: 'list', mobileMenuOpen: false }));
+                    }}
+                    className="w-full py-2 px-3 bg-navy-900 hover:bg-navy-850 border border-teal-500/40 text-teal-300 rounded-lg text-xs font-bold flex items-center justify-center gap-2 shadow"
+                  >
+                    <Icon name="truck" className="w-4 h-4 text-teal-400" />
+                    <span>Suppliers ({suppliersList.length})</span>
+                  </button>
 
-                <button
-                  onClick={() => setActiveTab('inventory')}
-                  className={`flex items-center px-3 py-2 rounded-md transition whitespace-nowrap ${
-                    activeTab === 'inventory'
-                      ? 'bg-teal-700 text-white font-semibold shadow-sm'
-                      : 'text-slate-400 hover:text-slate-200 hover:bg-navy-850'
-                  }`}
-                >
-                  <Icon name="package" className="w-4 h-4 mr-2" />
-                  FEFO Inventory & Vault
-                  {kpis.expiringBatchesCount > 0 && (
-                    <span className="ml-2 bg-amber-500 text-black font-extrabold text-[10px] px-1.5 py-0.2 rounded-full">
-                      {kpis.expiringBatchesCount}
-                    </span>
-                  )}
-                </button>
+                  <button
+                    onClick={() => {
+                      setModalState(prev => ({ ...prev, loginModalOpen: true, staffModalTab: 'list', mobileMenuOpen: false }));
+                    }}
+                    className="w-full py-2 px-3 bg-navy-900 hover:bg-navy-850 border border-navy-800 text-slate-200 rounded-lg text-xs font-bold flex items-center justify-center gap-2 shadow"
+                  >
+                    <Icon name="user" className="w-4 h-4 text-teal-400" />
+                    <span>Switch Staff</span>
+                  </button>
+                </div>
 
-                <button
-                  onClick={() => setActiveTab('s5s6')}
-                  className={`flex items-center px-3 py-2 rounded-md transition whitespace-nowrap ${
-                    activeTab === 's5s6'
-                      ? 'bg-crimson-700 text-white font-semibold shadow-sm'
-                      : 'text-slate-400 hover:text-slate-200 hover:bg-navy-850'
-                  }`}
-                >
-                  <Icon name="lock" className="w-4 h-4 mr-2 text-red-300" />
-                  Schedule 5 & 6 Ledger (Act 101)
-                  <span className="ml-2 bg-red-950 text-red-300 border border-red-500/40 text-[10px] px-1.5 py-0.2 rounded font-mono">
-                    GPP §8.4
+                {/* 3. Active Staff Profile Information */}
+                <div className="bg-navy-900 p-2.5 rounded-lg border border-navy-800 flex items-center justify-between text-xs">
+                  <div>
+                    <span className="text-[10px] text-slate-400 uppercase font-semibold block">Clinician On Duty:</span>
+                    <strong className="text-white text-xs">{session.currentUser.name}</strong>
+                    <div className="text-[10px] text-teal-400 font-mono">{session.currentUser.council} #{session.currentUser.regNumber}</div>
+                  </div>
+                  <span className={`text-[10px] px-2 py-0.5 rounded font-extrabold uppercase ${
+                    session.currentUser.role === 'RESPONSIBLE_PHARMACIST' ? 'bg-emerald-950 text-emerald-300 border border-emerald-600' :
+                    session.currentUser.role === 'CLINICAL_PHARMACIST' ? 'bg-teal-950 text-teal-300 border border-teal-600' :
+                    session.currentUser.role === 'ASSISTANT_POST_BASIC' ? 'bg-amber-950 text-amber-300 border border-amber-600' :
+                    session.currentUser.role === 'ASSISTANT_BASIC' ? 'bg-slate-800 text-slate-300' :
+                    'bg-blue-950 text-blue-300 border border-blue-600'
+                  }`}>
+                    {session.currentUser.role === 'RESPONSIBLE_PHARMACIST' ? 'RP • L4' :
+                     session.currentUser.role === 'CLINICAL_PHARMACIST' ? 'PHARM • L3' :
+                     session.currentUser.role === 'ASSISTANT_POST_BASIC' ? 'ASST • L2' :
+                     session.currentUser.role === 'ASSISTANT_BASIC' ? 'ASST • L1' : 'NURSE • SANC'}
                   </span>
-                </button>
+                </div>
 
-                <button
-                  onClick={() => setActiveTab('inmates')}
-                  className={`flex items-center px-3 py-2 rounded-md transition whitespace-nowrap ${
-                    activeTab === 'inmates'
-                      ? 'bg-teal-700 text-white font-semibold shadow-sm'
-                      : 'text-slate-400 hover:text-slate-200 hover:bg-navy-850'
-                  }`}
-                >
-                  <Icon name="stethoscope" className="w-4 h-4 mr-2" />
-                  Inmate Regimens & Ward MAR
-                </button>
+                {/* 4. Supabase Cloud Sync & System Reset (Mobile) */}
+                <div className="flex items-center gap-2">
+                  <button
+                    onClick={() => {
+                      syncFromSupabaseCloud(true);
+                      setModalState(prev => ({ ...prev, mobileMenuOpen: false }));
+                    }}
+                    className="flex-1 py-2 px-3 bg-navy-900 hover:bg-navy-850 border border-navy-700 text-slate-300 rounded-lg text-xs font-mono flex items-center justify-center gap-2"
+                  >
+                    <span className={`w-2 h-2 rounded-full ${cloudStatus === 'CONNECTED' ? 'bg-emerald-400 animate-pulse' : 'bg-amber-400'}`}></span>
+                    <span>{cloudStatus === 'CONNECTED' ? 'Supabase Synced' : 'Sync Supabase'}</span>
+                  </button>
 
-                <button
-                  onClick={() => setActiveTab('depot')}
-                  className={`flex items-center px-3 py-2 rounded-md transition whitespace-nowrap ${
-                    activeTab === 'depot'
-                      ? 'bg-teal-700 text-white font-semibold shadow-sm'
-                      : 'text-slate-400 hover:text-slate-200 hover:bg-navy-850'
-                  }`}
-                >
-                  <Icon name="truck" className="w-4 h-4 mr-2" />
-                  Depot Requisitioner & EML
-                  {kpis.lowStockCount > 0 && (
-                    <span className="ml-2 bg-red-600 text-white font-bold text-[10px] px-1.5 py-0.2 rounded-full">
-                      {kpis.lowStockCount}
-                    </span>
-                  )}
-                </button>
-              </nav>
-            </div>
+                  <button
+                    onClick={() => {
+                      handleResetDemoData();
+                      setModalState(prev => ({ ...prev, mobileMenuOpen: false }));
+                    }}
+                    className="py-2 px-3 bg-navy-900 hover:bg-navy-850 border border-navy-700 text-slate-400 hover:text-white rounded-lg text-xs flex items-center gap-1.5"
+                    title="Reset to baseline"
+                  >
+                    <Icon name="refresh" className="w-3.5 h-3.5" />
+                    <span>Reset</span>
+                  </button>
+                </div>
+
+              </div>
+            )}
+
+                        {/* TIER 3: HORIZONTAL SCROLLING NAVIGATION TABS */}
+            <nav className="w-full px-3 sm:px-6 lg:px-8 border-t border-navy-800/80 bg-navy-950/40 py-1 sm:py-1.5 overflow-x-auto no-scrollbar flex items-center space-x-1 sm:space-x-1.5 text-xs sm:text-sm font-medium">
+              <button
+                onClick={() => setActiveTab('dashboard')}
+                className={`flex items-center px-3 py-2 rounded-md transition whitespace-nowrap ${
+                  activeTab === 'dashboard'
+                    ? 'bg-teal-700 text-white font-semibold shadow-sm'
+                    : 'text-slate-400 hover:text-slate-200 hover:bg-navy-850'
+                }`}
+              >
+                <Icon name="layers" className="w-4 h-4 mr-2" />
+                Command Dashboard
+              </button>
+
+              <button
+                onClick={() => setActiveTab('inventory')}
+                className={`flex items-center px-3 py-2 rounded-md transition whitespace-nowrap ${
+                  activeTab === 'inventory'
+                    ? 'bg-teal-700 text-white font-semibold shadow-sm'
+                    : 'text-slate-400 hover:text-slate-200 hover:bg-navy-850'
+                }`}
+              >
+                <Icon name="package" className="w-4 h-4 mr-2" />
+                FEFO Inventory & Vault
+                {kpis.expiringBatchesCount > 0 && (
+                  <span className="ml-2 bg-amber-500 text-black font-extrabold text-[10px] px-1.5 py-0.2 rounded-full">
+                    {kpis.expiringBatchesCount}
+                  </span>
+                )}
+              </button>
+
+              <button
+                onClick={() => setActiveTab('s5s6')}
+                className={`flex items-center px-3 py-2 rounded-md transition whitespace-nowrap ${
+                  activeTab === 's5s6'
+                    ? 'bg-crimson-700 text-white font-semibold shadow-sm'
+                    : 'text-slate-400 hover:text-slate-200 hover:bg-navy-850'
+                }`}
+              >
+                <Icon name="lock" className="w-4 h-4 mr-2 text-red-300" />
+                Schedule 5 & 6 Ledger (Act 101)
+                <span className="ml-2 bg-red-950 text-red-300 border border-red-500/40 text-[10px] px-1.5 py-0.2 rounded font-mono">
+                  GPP §8.4
+                </span>
+              </button>
+
+              <button
+                onClick={() => setActiveTab('inmates')}
+                className={`flex items-center px-3 py-2 rounded-md transition whitespace-nowrap ${
+                  activeTab === 'inmates'
+                    ? 'bg-teal-700 text-white font-semibold shadow-sm'
+                    : 'text-slate-400 hover:text-slate-200 hover:bg-navy-850'
+                }`}
+              >
+                <Icon name="stethoscope" className="w-4 h-4 mr-2" />
+                Inmate Regimens & Ward MAR
+              </button>
+
+              <button
+                onClick={() => setActiveTab('depot')}
+                className={`flex items-center px-3 py-2 rounded-md transition whitespace-nowrap ${
+                  activeTab === 'depot'
+                    ? 'bg-teal-700 text-white font-semibold shadow-sm'
+                    : 'text-slate-400 hover:text-slate-200 hover:bg-navy-850'
+                }`}
+              >
+                <Icon name="truck" className="w-4 h-4 mr-2" />
+                Depot Requisitioner & EML
+                {kpis.lowStockCount > 0 && (
+                  <span className="ml-2 bg-red-600 text-white font-bold text-[10px] px-1.5 py-0.2 rounded-full">
+                    {kpis.lowStockCount}
+                  </span>
+                )}
+              </button>
+            </nav>
           </header>
 
           {/* MAIN CONTENT WORKSPACE */}
@@ -2406,7 +2614,10 @@ import React, { useState, useEffect, useReducer, useMemo, useRef } from 'react';
                                     inmateDispenseOpen: true,
                                     dispensingInmate: inmate,
                                     dispensingSelectedDrugId: firstMed ? firstMed.drugId : inventory[0].id,
-                                    dispensingQty: 1
+                                    dispensingQty: 1,
+        supplierModalOpen: false,
+        supplierModalTab: 'list',
+        mobileMenuOpen: false
                                   }));
                                 }}
                                 className="px-2.5 py-1.5 bg-teal-700 hover:bg-teal-600 text-white rounded text-xs font-semibold flex items-center gap-1 transition shadow"
@@ -3273,7 +3484,234 @@ import React, { useState, useEffect, useReducer, useMemo, useRef } from 'react';
             );
           })()}
 
-          {/* 1. GOODS RECEIVED VOUCHER (GRV) INTAKE MODAL */}
+          {/* ===================== SUPPLIERS & DEPOTS REGISTRY MODAL ===================== */}
+          {modalState.supplierModalOpen && (() => {
+            const currentTab = modalState.supplierModalTab || 'list';
+
+            return (
+              <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/85 backdrop-blur-sm">
+                <div className="bg-navy-900 border-2 border-teal-500/50 rounded-lg max-w-3xl w-full p-6 space-y-4 shadow-2xl max-h-[90vh] overflow-y-auto">
+                  
+                  {/* Modal Header */}
+                  <div className="flex items-center justify-between pb-3 border-b border-navy-800">
+                    <div className="flex items-center space-x-2">
+                      <Icon name="truck" className="w-5 h-5 text-teal-400" />
+                      <div>
+                        <h3 className="text-base font-bold text-white">Supplying Facilities & Wholesalers Registry</h3>
+                        <span className="text-[10px] text-teal-300 font-mono">SAPC Good Pharmacy Practice (GPP §4.1) Accredited Supply Chain</span>
+                      </div>
+                    </div>
+                    <button onClick={() => setModalState(prev => ({ ...prev, supplierModalOpen: false }))} className="text-slate-400 hover:text-white">
+                      <Icon name="x" className="w-5 h-5" />
+                    </button>
+                  </div>
+
+                  {/* Tabs */}
+                  <div className="flex border-b border-navy-800 space-x-2 text-xs">
+                    <button
+                      onClick={() => setModalState(prev => ({ ...prev, supplierModalTab: 'list' }))}
+                      className={`pb-2 px-3 font-semibold transition ${
+                        currentTab === 'list'
+                          ? 'border-b-2 border-teal-400 text-teal-300'
+                          : 'text-slate-400 hover:text-slate-200'
+                      }`}
+                    >
+                      Accredited Suppliers & Depots ({suppliersList.length})
+                    </button>
+                    <button
+                      onClick={() => setModalState(prev => ({ ...prev, supplierModalTab: 'add' }))}
+                      className={`pb-2 px-3 font-semibold flex items-center gap-1.5 transition ${
+                        currentTab === 'add'
+                          ? 'border-b-2 border-teal-400 text-teal-300'
+                          : 'text-slate-400 hover:text-slate-200'
+                      }`}
+                    >
+                      <Icon name="plus" className="w-3.5 h-3.5" />
+                      Add Supplying Facility / Wholesaler
+                    </button>
+                  </div>
+
+                  {/* TAB 1: SUPPLIERS ROSTER */}
+                  {currentTab === 'list' && (
+                    <div className="space-y-3">
+                      <p className="text-xs text-slate-300 leading-relaxed">
+                        Authorized medical depots and registered pharmaceutical wholesalers compliant with Section 22A of the Medicines and Related Substances Act.
+                      </p>
+
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                        {suppliersList.map((sup) => (
+                          <div
+                            key={sup.id}
+                            className="bg-navy-950 p-3.5 rounded-lg border border-navy-800 hover:border-teal-500/40 transition space-y-2 text-xs"
+                          >
+                            <div className="flex items-start justify-between">
+                              <div>
+                                <span className="font-bold text-white text-sm block leading-snug">{sup.name}</span>
+                                <span className="text-[10px] font-mono text-teal-400">{sup.code}</span>
+                              </div>
+                              <span className={`text-[9px] px-2 py-0.5 rounded font-extrabold uppercase whitespace-nowrap ${
+                                sup.type === 'PROVINCIAL_DEPOT'
+                                  ? 'bg-blue-950 text-blue-300 border border-blue-600'
+                                  : 'bg-teal-950 text-teal-300 border border-teal-600'
+                              }`}>
+                                {sup.type === 'PROVINCIAL_DEPOT' ? 'PROVINCIAL DEPOT' : 'WHOLESALER'}
+                              </span>
+                            </div>
+
+                            <div className="space-y-1 text-slate-400 text-[11px] border-t border-navy-850 pt-2">
+                              <div>License: <strong className="text-slate-200 font-mono">{sup.license}</strong></div>
+                              <div>Region: <strong className="text-slate-200">{sup.province}</strong></div>
+                              <div>Contact Sister / Rep: <strong className="text-slate-200">{sup.contact}</strong></div>
+                              <div>Phone: <strong className="text-teal-300 font-mono">{sup.phone}</strong></div>
+                            </div>
+
+                            <div className="pt-2 flex justify-end">
+                              <button
+                                onClick={() => {
+                                  if (suppliersList.length <= 1) {
+                                    addToast('error', 'Action Restricted', 'Cannot remove the last remaining supplier.');
+                                    return;
+                                  }
+                                  if (confirm(`Remove supplier "${sup.name}" from accredited register?`)) {
+                                    setSuppliersList(prev => prev.filter(s => s.id !== sup.id));
+                                    addToast('info', 'Supplier Decommissioned', `Removed ${sup.name} from supply chain.`);
+                                  }
+                                }}
+                                className="text-red-400 hover:text-red-300 text-[11px] flex items-center gap-1"
+                              >
+                                <Icon name="trash" className="w-3.5 h-3.5" />
+                                <span>Remove</span>
+                              </button>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+
+                  {/* TAB 2: REGISTER NEW SUPPLIER / DEPOT FORM */}
+                  {currentTab === 'add' && (
+                    <form onSubmit={async (e) => {
+                      e.preventDefault();
+                      const f = e.target;
+                      const newSupplier = {
+                        id: `SUP-${Math.floor(100 + Math.random() * 900)}`,
+                        name: f.name.value,
+                        type: f.type.value,
+                        code: f.code.value.toUpperCase(),
+                        license: f.license.value,
+                        province: f.province.value,
+                        contact: f.contact.value,
+                        phone: f.phone.value
+                      };
+
+                      setSuppliersList(prev => [...prev, newSupplier]);
+
+                      // Also sync to Supabase if client is ready
+                      if (supabaseClient) {
+                        try {
+                          await supabaseClient.from('suppliers').insert([{
+                            id: newSupplier.id,
+                            name: newSupplier.name,
+                            type: newSupplier.type,
+                            code: newSupplier.code,
+                            license_number: newSupplier.license,
+                            province: newSupplier.province,
+                            contact_person: newSupplier.contact,
+                            contact_phone: newSupplier.phone,
+                            is_active: true
+                          }]);
+                        } catch(err) {
+                          console.warn('Supabase supplier insert notice:', err);
+                        }
+                      }
+
+                      addToast('success', 'Supplier Registered', `${newSupplier.name} added to accredited supply network.`);
+                      setModalState(prev => ({ ...prev, supplierModalTab: 'list' }));
+                    }} className="space-y-3 text-xs">
+                      
+                      <div className="grid grid-cols-2 gap-3">
+                        <div>
+                          <label className="text-slate-300 font-semibold block mb-1">Facility / Supplier Name:</label>
+                          <input name="name" required placeholder="e.g. Mthatha Regional Medical Depot" className="w-full bg-navy-950 border border-navy-700 rounded p-2 text-slate-100" />
+                        </div>
+                        <div>
+                          <label className="text-slate-300 font-semibold block mb-1">Supply Classification:</label>
+                          <select name="type" className="w-full bg-navy-950 border border-navy-700 rounded p-2 text-slate-100">
+                            <option value="PROVINCIAL_DEPOT">Provincial Medical Depot (DoH / Provincial Government)</option>
+                            <option value="COMMERCIAL_MANUFACTURER">Commercial Pharmaceutical Wholesaler / Manufacturer</option>
+                          </select>
+                        </div>
+                      </div>
+
+                      <div className="grid grid-cols-2 gap-3">
+                        <div>
+                          <label className="text-slate-300 font-semibold block mb-1">Depot / Wholesaler Code:</label>
+                          <input name="code" required placeholder="e.g. MRD-EC-04 or MYLAN-SA" className="w-full bg-navy-950 border border-navy-700 rounded p-2 text-slate-100 font-mono uppercase" />
+                        </div>
+                        <div>
+                          <label className="text-slate-300 font-semibold block mb-1">SAPC Wholesale License / SAHPRA Reg:</label>
+                          <input name="license" required placeholder="e.g. SAPC-WL-2026-9041" defaultValue="SAPC-WL-2026-9041" className="w-full bg-navy-950 border border-navy-700 rounded p-2 text-slate-100 font-mono" />
+                        </div>
+                      </div>
+
+                      <div className="grid grid-cols-2 gap-3">
+                        <div>
+                          <label className="text-slate-300 font-semibold block mb-1">Province / Geographic Area:</label>
+                          <select name="province" className="w-full bg-navy-950 border border-navy-700 rounded p-2 text-slate-100">
+                            <option value="Eastern Cape (Gqeberha / Mthatha)">Eastern Cape</option>
+                            <option value="Gauteng (Pretoria / JHB)">Gauteng</option>
+                            <option value="Western Cape (Cape Town)">Western Cape</option>
+                            <option value="Northern Cape (Kimberley)">Northern Cape</option>
+                            <option value="KwaZulu-Natal (Durban / Pietermaritzburg)">KwaZulu-Natal</option>
+                            <option value="Free State (Bloemfontein)">Free State</option>
+                            <option value="Limpopo (Polokwane)">Limpopo</option>
+                            <option value="Mpumalanga (Nelspruit)">Mpumalanga</option>
+                            <option value="North West (Mahikeng)">North West</option>
+                            <option value="National Multi-Region">National Multi-Region</option>
+                          </select>
+                        </div>
+                        <div>
+                          <label className="text-slate-300 font-semibold block mb-1">Contact Sister / Key Account Manager:</label>
+                          <input name="contact" required placeholder="e.g. Sr. Nomsa Khumalo, RN" className="w-full bg-navy-950 border border-navy-700 rounded p-2 text-slate-100" />
+                        </div>
+                      </div>
+
+                      <div className="grid grid-cols-2 gap-3">
+                        <div>
+                          <label className="text-slate-300 font-semibold block mb-1">Dispatch Phone / Mobile:</label>
+                          <input name="phone" required defaultValue="+27 47 502 1100" className="w-full bg-navy-950 border border-navy-700 rounded p-2 text-slate-100 font-mono" />
+                        </div>
+                        <div>
+                          <label className="text-slate-300 font-semibold block mb-1">Standard Delivery SLA:</label>
+                          <input name="sla" defaultValue="7 Working Days (Routine) • 24h (Urgent)" className="w-full bg-navy-950 border border-navy-700 rounded p-2 text-slate-100" />
+                        </div>
+                      </div>
+
+                      <div className="pt-2 flex justify-end gap-2 border-t border-navy-800">
+                        <button
+                          type="button"
+                          onClick={() => setModalState(prev => ({ ...prev, supplierModalTab: 'list' }))}
+                          className="px-3 py-1.5 bg-navy-800 text-slate-300 rounded hover:bg-navy-700 transition"
+                        >
+                          Back to Roster
+                        </button>
+                        <button
+                          type="submit"
+                          className="px-4 py-1.5 bg-teal-700 hover:bg-teal-600 text-white rounded font-bold shadow transition"
+                        >
+                          Accredit & Commit Supplier
+                        </button>
+                      </div>
+                    </form>
+                  )}
+
+                </div>
+              </div>
+            );
+          })()}
+
+          /* 1. GOODS RECEIVED VOUCHER (GRV) INTAKE MODAL */}
           {modalState.grvOpen && (
             <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm">
               <div className="bg-navy-900 border border-navy-700 rounded-lg max-w-lg w-full p-6 space-y-4 shadow-2xl">
@@ -3321,8 +3759,23 @@ import React, { useState, useEffect, useReducer, useMemo, useRef } from 'react';
                       <input name="grvNumber" required defaultValue={`GRV-${Math.floor(10000 + Math.random() * 90000)}`} className="w-full bg-navy-950 border border-navy-700 rounded p-2 text-slate-100 font-mono" />
                     </div>
                     <div>
-                      <label className="text-slate-300 font-semibold block mb-1">Supplier / Depot Name:</label>
-                      <input name="supplier" required defaultValue="Cape Medical Depot / Aspen" className="w-full bg-navy-950 border border-navy-700 rounded p-2 text-slate-100" />
+                      <div className="flex justify-between items-center mb-1">
+                        <label className="text-slate-300 font-semibold block">Supplier / Supplying Depot:</label>
+                        <button
+                          type="button"
+                          onClick={() => setModalState(prev => ({ ...prev, supplierModalOpen: true, supplierModalTab: 'add' }))}
+                          className="text-[10px] text-teal-400 hover:underline font-bold"
+                        >
+                          + New Supplier
+                        </button>
+                      </div>
+                      <select name="supplier" required className="w-full bg-navy-950 border border-navy-700 rounded p-2 text-slate-100 text-xs font-medium">
+                        {suppliersList.map(s => (
+                          <option key={s.id} value={s.name}>
+                            {s.name} ({s.code})
+                          </option>
+                        ))}
+                      </select>
                     </div>
                   </div>
 

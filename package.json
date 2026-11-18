@@ -1,0 +1,22 @@
+{
+  "name": "boraine-medtrack-correctional",
+  "version": "4.2.0",
+  "private": true,
+  "description": "Boraine MedTrack (Correctional Edition) — Correctional Facility Pharmacy Management System with SAPC GPP Compliance",
+  "type": "module",
+  "scripts": {
+    "start": "npx serve . -l 3000",
+    "serve": "npx serve .",
+    "dev": "npx serve ."
+  },
+  "keywords": [
+    "correctional-pharmacy",
+    "sapc-gpp",
+    "fefo-inventory",
+    "schedule-5-6",
+    "south-africa-eml",
+    "pwa-offline"
+  ],
+  "author": "Boraine Technologies",
+  "license": "UNLICENSED"
+}

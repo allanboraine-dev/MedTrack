@@ -5119,7 +5119,6 @@
             );
           })()}
 
-          {/* 1. GOODS RECEIVED VOUCHER (GRV) INTAKE MODAL */}
           {modalState.grvOpen && (
             <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm">
               <div className="bg-navy-900 border border-navy-700 rounded-lg max-w-lg w-full p-6 space-y-4 shadow-2xl">
@@ -6915,7 +6914,10 @@ Date: 2026-11-18
     if ('serviceWorker' in navigator && (window.location.protocol === 'https:' || window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1')) {
       window.addEventListener('load', () => {
         navigator.serviceWorker.register('sw.js')
-          .then((reg) => console.log('Boraine MedTrack ServiceWorker registered with scope:', reg.scope))
+          .then((reg) => {
+            console.log('Boraine MedTrack ServiceWorker registered with scope:', reg.scope);
+            reg.update();
+          })
           .catch((err) => console.log('Boraine MedTrack ServiceWorker registration note:', err.message));
       });
     }

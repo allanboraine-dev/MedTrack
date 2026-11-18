@@ -4959,7 +4959,6 @@ import React, { useState, useEffect, useReducer, useMemo, useRef } from 'react';
             );
           })()}
 
-          {/* 1. GOODS RECEIVED VOUCHER (GRV) INTAKE MODAL */}
           {modalState.grvOpen && (
             <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm">
               <div className="bg-navy-900 border border-navy-700 rounded-lg max-w-lg w-full p-6 space-y-4 shadow-2xl">

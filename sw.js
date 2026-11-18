@@ -1,5 +1,5 @@
 // Boraine MedTrack Air-Gapped Offline Service Worker
-const CACHE_NAME = 'boraine-medtrack-v5.5';
+const CACHE_NAME = 'boraine-medtrack-v5.6';
 const ASSETS = [
   './',
   './index.html',
@@ -32,9 +32,37 @@ self.addEventListener('activate', (event) => {
 });
 
 self.addEventListener('fetch', (event) => {
+  const req = event.request;
+
+  // For HTML page navigation, use Network-First to immediately receive UI updates, falling back to cache offline
+  if (req.mode === 'navigate' || req.destination === 'document') {
+    event.respondWith(
+      fetch(req)
+        .then((networkResponse) => {
+          if (networkResponse && networkResponse.status === 200) {
+            const clone = networkResponse.clone();
+            caches.open(CACHE_NAME).then((cache) => cache.put(req, clone));
+          }
+          return networkResponse;
+        })
+        .catch(() => caches.match(req).then((cached) => cached || caches.match('./index.html')))
+    );
+    return;
+  }
+
+  // For scripts and static assets, use Cache-First, falling back to Network
   event.respondWith(
-    caches.match(event.request).then((cachedResponse) => {
-      return cachedResponse || fetch(event.request).catch(() => caches.match('./index.html'));
+    caches.match(req).then((cachedResponse) => {
+      if (cachedResponse) {
+        return cachedResponse;
+      }
+      return fetch(req).then((networkResponse) => {
+        if (networkResponse && networkResponse.status === 200 && req.method === 'GET') {
+          const clone = networkResponse.clone();
+          caches.open(CACHE_NAME).then((cache) => cache.put(req, clone));
+        }
+        return networkResponse;
+      }).catch(() => caches.match('./index.html'));
     })
   );
 });
